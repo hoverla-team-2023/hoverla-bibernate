@@ -1,0 +1,47 @@
+Configuration:
+  status: WARN
+  Properties:
+    property:
+      - name: ROOT_LOGGER_LEVEL
+        value: trace
+      - name: LOG_FILE_NAME
+        value: logs/bring-${date:yyyy-MM-dd}.log
+      - name: DATE_LOG_PATTERN
+        value: "yyyy-MM-dd HH:mm:ss.SSS"
+      - name: LEVEL_LOG_PATTERN
+        value: "%-5level"
+      - name: PID_LOG_PATTERN
+        value: "%pid{[-]}"
+      - name: LOGGER_LOG_PATTERN
+        value: "%logger{36}"
+      - name: CONSOLE_LOG_PATTERN
+        value: "%d{${DATE_LOG_PATTERN}} [%t] %highlight{${LEVEL_LOG_PATTERN}}{FATAL=bright_red, ERROR=red, WARN=bright_yellow, 
+        INFO=bright_white, DEBUG=bright_green, TRACE=bright_cyan} %style{${PID_LOG_PATTERN}}{magenta} -- %style{${LOGGER_LOG_PATTERN}}{cyan} : %msg%n"
+      - name: FILE_LOG_PATTERN
+        value: "%d{${DATE_LOG_PATTERN}} [%t] ${LEVEL_LOG_PATTERN} ${PID_LOG_PATTERN} -- ${LOGGER_LOG_PATTERN} : %msg%n"
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        Pattern: "${CONSOLE_LOG_PATTERN}"
+    RollingFile:
+      name: File
+      fileName: "${LOG_FILE_NAME}"
+      filePattern: logs/bring-%d{MM-dd-yyyy}.log.gz
+      Policies:
+        - TimeBasedTriggeringPolicy:
+            interval: 1
+            modulate: true
+      DefaultRolloverStrategy:
+        max: 10
+      PatternLayout:
+        Pattern: "${FILE_LOG_PATTERN}"
+
+  Loggers:
+    Root:
+      level: "${ROOT_LOGGER_LEVEL}"
+      AppenderRef:
+        - ref: Console
+        - ref: File
