@@ -1,11 +1,18 @@
 package com.bibernate.hoverla.jdbc;
 
-import lombok.Data;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
-@Data
-public class JdbcParameterBinding {
+import lombok.AllArgsConstructor;
 
-  private Object bindValue;
-  private JdbcParameterBinder<?> bindType;
+@AllArgsConstructor
+public class JdbcParameterBinding<T> {
+
+  private T bindValue;
+  private JdbcParameterBinder<T> binder;
+
+  public void doBind(PreparedStatement preparedStatement, int index) throws SQLException {
+    binder.bindParameter(preparedStatement, index, bindValue);
+  }
 
 }

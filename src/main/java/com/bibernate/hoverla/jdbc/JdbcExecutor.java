@@ -4,8 +4,8 @@ import java.util.List;
 
 public interface JdbcExecutor {
 
-  List<Object[]> executeSelectQuery(String sqlTemplate, JdbcParameterBinding[] bindValues, JdbcResultExtractor<?>[] resultExtractors);
+  List<Object[]> executeSelectQuery(String sqlTemplate, JdbcParameterBinding<?>[] bindValues, JdbcResultExtractor<?>[] resultExtractors);
 
-  int executeUpdate(String sqlTemplate, JdbcParameterBinding[] bindValues);
+  int executeUpdate(String sqlTemplate, JdbcParameterBinding<?>[] bindValues);
 
 }
