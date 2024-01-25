@@ -11,6 +11,12 @@ import com.bibernate.hoverla.exceptions.BibernateSqlException;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * The JdbcExecutorImpl class is an implementation of the JdbcExecutor interface, which provides methods
+ * for executing SQL queries and updates using JDBC. This implementation allows you to perform various
+ * database operations, including select queries, insertions, updates, deletions, and working with
+ * generated keys, using a provided JDBC Connection.
+ */
 @RequiredArgsConstructor
 public class JdbcExecutorImpl implements JdbcExecutor {
 
@@ -31,6 +37,21 @@ public class JdbcExecutorImpl implements JdbcExecutor {
       }
 
       return results;
+    } catch (SQLException sqlException) {
+      throw new BibernateSqlException(sqlException.getMessage(), sqlException);
+    }
+  }
+
+  @Override
+  public Object executeUpdateAndReturnGeneratedKeys(String sqlTemplate, JdbcParameterBinding<?>[] bindValues) {
+    try (PreparedStatement preparedStatement = connection.prepareStatement(sqlTemplate, PreparedStatement.RETURN_GENERATED_KEYS)) {
+      bindParameters(preparedStatement, bindValues);
+      preparedStatement.executeUpdate();
+      ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+      if (generatedKeys.next()) {
+        return generatedKeys.getObject(1);
+      }
+      throw new BibernateSqlException("Can not obtain generated keys");
     } catch (SQLException sqlException) {
       throw new BibernateSqlException(sqlException.getMessage(), sqlException);
     }

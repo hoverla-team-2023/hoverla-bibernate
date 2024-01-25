@@ -8,11 +8,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.bibernate.hoverla.jdbc.types.PostgreSqlJdbcEnumType;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class JdbcExecutorImplTest {
 
   @RegisterExtension
@@ -21,6 +25,7 @@ public class JdbcExecutorImplTest {
   JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(DB.getConnection());
 
   @Test
+  @Order(10)
   void whenUpdateWithCustomJdbcType_thenChangesSaved() throws SQLException {
     JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
     JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
@@ -45,6 +50,24 @@ public class JdbcExecutorImplTest {
       .collect(Collectors.joining(","));
 
     Assertions.assertEquals("[1, FirsName1, LastName1, null],[2, FirsName2, LastName2, ADMIN]", select);
+  }
+
+  @Test
+  @Order(20)
+  void whenInsert_thenReturnGeneratedKeys() throws SQLException {
+    DB.getConnection().setAutoCommit(false);
+
+    Object object = jdbcExecutor
+      .executeUpdateAndReturnGeneratedKeys("INSERT INTO users (first_name, last_name, role) VALUES (?,?,?)",
+                                           new JdbcParameterBinding[] {
+                                             new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
+                                             new JdbcParameterBinding<>("testLastName", PreparedStatement::setObject),
+                                             new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) }
+      );
+
+    DB.getConnection().commit();
+
+    Assertions.assertNotNull(object);
   }
 
   enum Role {
