@@ -3,6 +3,9 @@ package com.bibernate.hoverla.metamodel;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.Data;
+
+@Data
 public class Metamodel {
 
   private final Map<Class<?>, EntityMapping> entityMappingMap = new HashMap<>();

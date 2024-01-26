@@ -5,12 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+// todo: add JavaDoc
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Table {
 
   String value();
-  String catalog() default "";
-  String schema() default "";
 
 }

@@ -1,6 +1,6 @@
 package com.bibernate.hoverla.metamodel;
 
-import com.bibernate.hoverla.jdbc.JdbcType;
+import com.bibernate.hoverla.jdbc.types.JdbcType;
 
 public class FieldMapping<T> {
 
