@@ -3,8 +3,10 @@ package com.bibernate.hoverla.metamodel;
 import com.bibernate.hoverla.jdbc.types.JdbcType;
 
 import lombok.Getter;
+import lombok.Builder;
 
 @Getter
+@Builder
 public class FieldMapping<T> {
 
   private String columnName;

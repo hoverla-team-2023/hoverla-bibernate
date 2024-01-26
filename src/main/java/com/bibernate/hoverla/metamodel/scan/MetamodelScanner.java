@@ -1,7 +1,16 @@
 package com.bibernate.hoverla.metamodel.scan;
 
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Set;
+
+import org.reflections.Reflections;
+
+import com.bibernate.hoverla.annotations.Column;
 import com.bibernate.hoverla.annotations.Entity;
 import com.bibernate.hoverla.annotations.Id;
+import com.bibernate.hoverla.metamodel.EntityMapping;
+import com.bibernate.hoverla.metamodel.FieldMapping;
 import com.bibernate.hoverla.metamodel.Metamodel;
 
 /**
@@ -29,6 +38,29 @@ public class MetamodelScanner {
    * @return metadata describing entities in the given package
    */
   public Metamodel scanPackage(String packageName) {
+    var reflections = new Reflections(packageName);
+    Set<Class<?>> entitites = reflections.getTypesAnnotatedWith(Entity.class);
+    entitites.stream()
+//      .filter(entity -> {
+//        Arrays.stream(entity.getDeclaredFields())
+//          .filter(field -> field.isAnnotationPresent(Id.class))
+//          .
+//      })
+      .map(this::scanEntity);
+
+    return null;
+  }
+
+  private EntityMapping scanEntity(Class<?> entityClass) {
+    Arrays.stream(entityClass.getDeclaredFields())
+      .map(this::scanField);
+  }
+
+  private <T> FieldMapping<T> scanField(Field field) {
+    FieldMapping.builder()
+      .columnName(field.isAnnotationPresent(Column.class) ?
+                   field.getAnnotation(Column.class).value() :
+                  )
     return null;
   }
 
