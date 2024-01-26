@@ -6,7 +6,7 @@ import com.bibernate.hoverla.metamodel.Metamodel;
 
 /**
  * Scanner that constructs a {@link Metamodel} from entities. A class is considered an entity if it
- * has {@link Entity} annotation on it, and at least one field annotated with {@link Id}.
+ * has {@link Entity} annotation on it, and one field annotated with {@link Id}.
  */
 public class MetamodelScanner {
 

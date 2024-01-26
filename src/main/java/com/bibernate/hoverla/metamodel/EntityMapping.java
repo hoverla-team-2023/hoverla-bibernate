@@ -2,7 +2,6 @@ package com.bibernate.hoverla.metamodel;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import lombok.Getter;
 
@@ -25,8 +24,8 @@ public class EntityMapping {
     this.tableName = tableName;
   }
 
-  public Set<FieldMapping<?>> getPrimaryKeyMappings() {
-    return Set.of();
+  public FieldMapping<?> getPrimaryKeyMappings() {
+    return null;
   }
 
 }
