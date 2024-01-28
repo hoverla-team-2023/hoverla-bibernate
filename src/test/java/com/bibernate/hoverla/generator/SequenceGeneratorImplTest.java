@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -78,12 +79,13 @@ class SequenceGeneratorImplTest {
 
     log.info("Main thread waits for all transfer threads to finish...");
     awaitOnLatch(endLatch);
-    Long maxGeneratedValue = new HashSet<>(generated).stream().max(Long::compareTo).orElse(Long.MAX_VALUE);
+    long maxGeneratedValue = new HashSet<>(generated).stream().max(Long::compareTo).orElse(Long.MAX_VALUE);
 
     // verify number of unique generated values
     Assertions.assertEquals(THREAD_COUNT, new HashSet<>(generated).size());
     // verify that we don't have redundant db calls that leads to skipping values
-    Assertions.assertTrue(maxGeneratedValue <= 25);
+    Assertions.assertEquals(25L, maxGeneratedValue);
+    Assertions.assertTrue(maxGeneratedValue <= 25L);
   }
 
   @Test
@@ -101,6 +103,7 @@ class SequenceGeneratorImplTest {
     hikariConfig.setJdbcUrl(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getJdbcUrl());
     hikariConfig.setUsername(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getUsername());
     hikariConfig.setPassword(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getPassword());
+    hikariConfig.setMaximumPoolSize(10);
     return new HikariDataSource(hikariConfig);
   }
 
