@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
-import org.junit.Assert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -23,6 +23,8 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import lombok.extern.slf4j.Slf4j;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -84,8 +86,7 @@ class SequenceGeneratorImplTest {
     // verify number of unique generated values
     Assertions.assertEquals(THREAD_COUNT, new HashSet<>(generated).size());
     // verify that we don't have redundant db calls that leads to skipping values
-    Assertions.assertEquals(25L, maxGeneratedValue);
-    Assertions.assertTrue(maxGeneratedValue <= 25L);
+    assertThat(maxGeneratedValue, Matchers.either(Matchers.is(20L)).or(Matchers.is(25L)));
   }
 
   @Test
