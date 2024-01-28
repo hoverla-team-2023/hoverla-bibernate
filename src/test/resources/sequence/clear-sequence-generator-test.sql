@@ -1,0 +1,1 @@
+DROP SEQUENCE IF EXISTS test_seq;
