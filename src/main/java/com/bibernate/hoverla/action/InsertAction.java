@@ -37,4 +37,9 @@ public class InsertAction extends EntityAction {
     return 10;
   }
 
+  @Override
+  boolean executeImmediately() {
+    return false;
+  }
+
 }

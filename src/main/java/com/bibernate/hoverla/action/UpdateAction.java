@@ -37,4 +37,9 @@ public class UpdateAction extends EntityAction {
     return 20;
   }
 
+  @Override
+  boolean executeImmediately() {
+    return false;
+  }
+
 }

@@ -21,8 +21,8 @@ public abstract class EntityAction {
   /**
    * Constructs a new entity action with the specified entity and entity persister.
    *
-   * @param entity           The entity instance.
-   * @param entityPersister  The entity persister.
+   * @param entity          The entity instance.
+   * @param entityPersister The entity persister.
    */
   public EntityAction(Object entity, EntityPersister entityPersister) {
     this.entity = entity;
@@ -40,4 +40,12 @@ public abstract class EntityAction {
    * @return The priority value.
    */
   abstract int priority();
+
+  /**
+   * Determines whether the entity action should be executed immediately or deferred.
+   *
+   * @return `true` if the action should be executed immediately, `false` if it can be deferred.
+   */
+  abstract boolean executeImmediately();
+
 }

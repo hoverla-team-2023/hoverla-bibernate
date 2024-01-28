@@ -22,4 +22,9 @@ public class IdentityInsertAction extends InsertAction {
     super(entity, entityPersister);
   }
 
+  @Override
+  boolean executeImmediately() {
+    return true;
+  }
+
 }

@@ -44,8 +44,7 @@ public class ActionQueue {
    * @param action The action to add.
    */
   public void addAction(EntityAction action) {
-    if (action instanceof IdentityInsertAction) {
-      log.debug("Scheduled execution for IdentityInsertAction");
+    if (action.executeImmediately()) {
       action.execute();
       return;
     }

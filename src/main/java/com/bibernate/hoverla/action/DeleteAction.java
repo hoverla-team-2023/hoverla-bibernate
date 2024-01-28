@@ -37,4 +37,9 @@ public class DeleteAction extends EntityAction {
     return 30;
   }
 
+  @Override
+  boolean executeImmediately() {
+    return false;
+  }
+
 }
