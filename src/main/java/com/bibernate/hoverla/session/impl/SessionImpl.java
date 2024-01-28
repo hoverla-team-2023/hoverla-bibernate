@@ -5,9 +5,11 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
-import com.bibernate.hoverla.session.HoverlaEntityPerseverance;
+import com.bibernate.hoverla.exceptions.BibernateException;
+import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.session.PersistenceContext;
 import com.bibernate.hoverla.session.Session;
+import com.bibernate.hoverla.session.service.HoverlaSessionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,18 +22,15 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SessionImpl implements Session {
 
-  private HoverlaEntityPerseverance perseverance;
+  private  HoverlaSessionService hoverlaSessionService;
   private PersistenceContext persistenceContext = new PersistenceContext();
   private Connection connection;
   private boolean isClosed = true;
 
-  /**
-   * Constructs a `SessionImpl` with the specified data source.
-   *
-   * @param dataSource The data source that provides the database connection.
-   */
-  public SessionImpl(DataSource dataSource) {
-    perseverance = new HoverlaEntityPerseverance(dataSource, this, persistenceContext);
+
+  public SessionImpl(Connection connection, HoverlaSessionService hoverlaSessionService) {
+    this.connection = connection;
+    this.hoverlaSessionService = hoverlaSessionService;
   }
 
   /**
@@ -114,7 +113,7 @@ public class SessionImpl implements Session {
    */
   private void checkIfClosed() {
     if (this.connection == null || isClosed) {
-      throw new IllegalStateException("Session is closed");
+      throw new BibernateException("Session is closed");
     }
   }
 
@@ -129,7 +128,7 @@ public class SessionImpl implements Session {
           connection.close();
         }
       } catch (SQLException e) {
-        e.printStackTrace();
+        throw new BibernateSqlException("Something went wrong during closing the session", e);
       }
       isClosed = true;
     }
