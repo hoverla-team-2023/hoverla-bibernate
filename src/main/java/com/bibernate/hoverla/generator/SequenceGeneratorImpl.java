@@ -6,8 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import com.bibernate.hoverla.exceptions.BibernateSqlException;
 
@@ -39,9 +37,8 @@ public class SequenceGeneratorImpl implements Generator {
   private final int allocationSize;
 
   private final AtomicLong currentVal = new AtomicLong();
-  private volatile Long lastAllocatedValue;
+  private volatile Long firstAllocatedValue;
   private volatile boolean isInitialized;
-  private final Lock initializationLock = new ReentrantLock();
 
   /**
    * Generates the next unique value from the PostgreSQL sequence.
@@ -54,21 +51,18 @@ public class SequenceGeneratorImpl implements Generator {
   public Object generateNext(Connection connection) {
 
     if (!isInitialized) {
-      try {
-        initializationLock.lock();
+      synchronized (this) {
         if (!isInitialized) {
           log.debug("Allocating initial value for sequence: {}...", sequenceName);
-          lastAllocatedValue = generateNextFromSequence(connection);
-          log.debug("Allocated initial value :{} for sequence: {} ", lastAllocatedValue, sequenceName);
-          currentVal.set(lastAllocatedValue);
+          firstAllocatedValue = generateNextFromSequence(connection);
+          log.debug("Allocated initial value :{} for sequence: {} ", firstAllocatedValue, sequenceName);
+          currentVal.set(firstAllocatedValue);
           isInitialized = true;
           return currentVal.getAndIncrement();
+
         }
-      } finally {
-        initializationLock.unlock();
       }
     }
-
     getNextFromSequenceIfAllocationExhausted(connection);
     return currentVal.getAndIncrement();
   }
@@ -80,9 +74,9 @@ public class SequenceGeneratorImpl implements Generator {
    * @param connection The database connection to use for fetching the next value.
    */
   private void getNextFromSequenceIfAllocationExhausted(Connection connection) {
-    if (Objects.equals((currentVal.get()) % allocationSize, lastAllocatedValue % allocationSize)) {
+    if (Objects.equals((currentVal.get()) % allocationSize, firstAllocatedValue % allocationSize)) {
       synchronized (this) {
-        if (Objects.equals((currentVal.get()) % allocationSize, lastAllocatedValue % allocationSize)) {
+        if (Objects.equals((currentVal.get()) % allocationSize, firstAllocatedValue % allocationSize)) {
           log.debug("Allocating more values from the sequence: {}", sequenceName);
 
           long next = generateNextFromSequence(connection);
@@ -105,10 +99,8 @@ public class SequenceGeneratorImpl implements Generator {
    * @throws BibernateSqlException If there is an error while retrieving the next value from the sequence.
    */
   protected long generateNextFromSequence(Connection connection) {
-    String sql = String.format(SEQUENCE_SQL_REQUEST, sequenceName);
-
-    log.debug("Executing SQL query to retrieve next value from sequence: {}", sql);
-    try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+    log.debug("Executing SQL query to retrieve next value from sequence: {}", sequenceName);
+    try (PreparedStatement preparedStatement = connection.prepareStatement(SEQUENCE_SQL_REQUEST)) {
       preparedStatement.setObject(1, sequenceName);
       ResultSet rs = preparedStatement.executeQuery();
       if (rs.next()) {
