@@ -1,11 +1,16 @@
 package com.bibernate.hoverla.jdbc;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
@@ -14,60 +19,134 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.jdbc.types.PostgreSqlJdbcEnumType;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class JdbcExecutorImplTest {
 
   @RegisterExtension
-  static PostgresSqlTestExtension DB = new PostgresSqlTestExtension("init-jdbc-executor-test.sql", "delete-all.sql");
+  static PostgresSqlTestExtension DB = new PostgresSqlTestExtension("jdbc-executor/init-jdbc-executor-test.sql", "jdbc-executor/delete-all.sql");
 
-  JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(DB.getConnection());
+  HikariDataSource dataSource = getHikariDataSource();
 
   @Test
   @Order(10)
-  void whenUpdateWithCustomJdbcType_thenChangesSaved() throws SQLException {
-    JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
-    JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
-    jdbcExecutor
-      .executeUpdate("UPDATE users SET role = ? where id = ?",
-                     new JdbcParameterBinding[] {
-                       roleJdbcParameterBinding,
-                       integerJdbcParameterBinding }
-      );
-    DB.getConnection().commit();
+  void whenUpdateWithCustomJdbcType_thenChangesSaved() {
+    inTransaction(dataSource, connection -> {
+      JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
+      JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
+      JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
 
-    List<Object[]> objects = jdbcExecutor
-      .executeSelectQuery("SELECT * FROM users",
-                          new JdbcParameterBinding[] {},
-                          new JdbcResultExtractor[] { ResultSet::getObject,
-                                                      ResultSet::getObject,
-                                                      ResultSet::getObject,
-                                                      new PostgreSqlJdbcEnumType<>(Role.class) }
+      jdbcExecutor
+        .executeUpdate("UPDATE users SET role = ? where id = ?",
+                       new JdbcParameterBinding[] {
+                         roleJdbcParameterBinding,
+                         integerJdbcParameterBinding }
+        );
+    });
 
-      );
-    String select = objects.stream().map(Arrays::toString)
-      .collect(Collectors.joining(","));
+    String result = inTransaction(dataSource, connection -> {
+      JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
+      List<Object[]> objects = jdbcExecutor
+        .executeSelectQuery("SELECT * FROM users",
+                            new JdbcParameterBinding[] {},
+                            new JdbcResultExtractor[] { ResultSet::getObject,
+                                                        ResultSet::getObject,
+                                                        ResultSet::getObject,
+                                                        new PostgreSqlJdbcEnumType<>(Role.class) }
 
-    Assertions.assertEquals("[1, FirsName1, LastName1, null],[2, FirsName2, LastName2, ADMIN]", select);
+        );
+      return objects.stream().map(Arrays::toString).collect(Collectors.joining(","));
+    });
+
+    Assertions.assertEquals("[1, FirsName1, LastName1, null],[2, FirsName2, LastName2, ADMIN]", result);
   }
 
   @Test
   @Order(20)
-  void whenInsert_thenReturnGeneratedKeys() throws SQLException {
-    DB.getConnection().setAutoCommit(false);
+  void whenInsert_thenReturnGeneratedKeys() {
+    Object generateKey = inTransaction(dataSource, connection -> {
+      return new JdbcExecutorImpl(connection)
+        .executeUpdateAndReturnGeneratedKeys("INSERT INTO users (first_name, last_name, role) VALUES (?,?,?)",
+                                             new JdbcParameterBinding[] {
+                                               new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
+                                               new JdbcParameterBinding<>("testLastName", PreparedStatement::setObject),
+                                               new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) }
+        );
+    });
 
-    Object object = jdbcExecutor
-      .executeUpdateAndReturnGeneratedKeys("INSERT INTO users (first_name, last_name, role) VALUES (?,?,?)",
-                                           new JdbcParameterBinding[] {
-                                             new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
-                                             new JdbcParameterBinding<>("testLastName", PreparedStatement::setObject),
-                                             new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) }
+    Assertions.assertNotNull(generateKey);
+  }
+
+  @Test
+  @Order(30)
+  void whenInsertSqlWithWrongTable_thenBibernateExceptionIsThrown() {
+
+    inTransaction(dataSource, connection -> {
+      Assertions.assertThrows(BibernateSqlException.class, () ->
+
+        new JdbcExecutorImpl(connection)
+          .executeUpdateAndReturnGeneratedKeys("INSERT INTO persons (first_name, last_name, role) VALUES (?,?,?)",
+                                               new JdbcParameterBinding[] {
+                                                 new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
+                                                 new JdbcParameterBinding<>("testLastName", PreparedStatement::setObject),
+                                                 new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) }
+          ));
+    });
+
+  }
+
+  @Test
+  @Order(40)
+  void whenUpdateWithWrongTable_thenChangesSaved() {
+
+    inTransaction(dataSource, connection -> {
+      Assertions.assertThrows(BibernateSqlException.class, () -> {
+                                JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
+                                JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
+                                JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
+
+                                jdbcExecutor
+                                  .executeUpdate("UPDATE users SET rolle = ? where id = ?",
+                                                 new JdbcParameterBinding[] {
+                                                   roleJdbcParameterBinding,
+                                                   integerJdbcParameterBinding }
+                                  );
+                              }
       );
+    });
+  }
 
-    DB.getConnection().commit();
+  private HikariDataSource getHikariDataSource() {
+    HikariConfig hikariConfig = new HikariConfig();
+    hikariConfig.setJdbcUrl(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getJdbcUrl());
+    hikariConfig.setUsername(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getUsername());
+    hikariConfig.setPassword(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getPassword());
+    return new HikariDataSource(hikariConfig);
+  }
 
-    Assertions.assertNotNull(object);
+  private void inTransaction(DataSource dataSource, Consumer<Connection> consumer) {
+    try (Connection connection = dataSource.getConnection()) {
+      connection.setAutoCommit(false);
+      consumer.accept(connection);
+      connection.commit();
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private <T> T inTransaction(DataSource dataSource, Function<Connection, T> consumer) {
+    try (Connection connection = dataSource.getConnection()) {
+      connection.setAutoCommit(false);
+      T result = consumer.apply(connection);
+      connection.commit();
+      return result;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   enum Role {
