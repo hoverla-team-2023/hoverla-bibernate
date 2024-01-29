@@ -17,12 +17,11 @@ import lombok.SneakyThrows;
 
 public class PostgresSqlTestExtension implements Extension, BeforeAllCallback, AfterAllCallback {
 
-  @Getter
-  private Connection connection;
-  private String initScript;
-  private String deleteScript;
+  private final Connection connection;
+  private final String initScript;
+  private final String deleteScript;
 
-  private static final PostgreSQLContainer<? extends PostgreSQLContainer<?>> POSTGRES_SQL_CONTAINER;
+  public static final PostgreSQLContainer<? extends PostgreSQLContainer<?>> POSTGRES_SQL_CONTAINER;
 
   static {
     POSTGRES_SQL_CONTAINER = new PostgreSQLContainer<>("postgres:15-alpine")
