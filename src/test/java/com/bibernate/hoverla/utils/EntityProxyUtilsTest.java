@@ -50,7 +50,7 @@ class EntityProxyUtilsTest {
   @Test
   public void whenGetInterceptor_thenVerityInterceptor() {
     User proxy = EntityProxyUtils.createProxy(session, User.class, 155L);
-    BibernateByteBuddyProxyInterceptor interceptor = EntityProxyUtils.getInterceptor(proxy);
+    BibernateByteBuddyProxyInterceptor interceptor = EntityProxyUtils.getProxyInterceptor(proxy);
 
     assertNotNull(interceptor);
     assertEquals(155L, interceptor.getEntityId());
@@ -62,7 +62,7 @@ class EntityProxyUtilsTest {
   @Test
   public void test() {
     User proxy = EntityProxyUtils.createProxy(session, User.class, 155L);
-    BibernateByteBuddyProxyInterceptor interceptor = EntityProxyUtils.getInterceptor(proxy);
+    BibernateByteBuddyProxyInterceptor interceptor = EntityProxyUtils.getProxyInterceptor(proxy);
 
     assertNotNull(interceptor);
     interceptor.unlinkSession();

@@ -63,7 +63,7 @@ public class EntityProxyUtils {
    * @return true if the object is a proxy, false otherwise.
    */
   public static boolean isProxy(Object object) {
-    return getInterceptor(object) != null;
+    return getProxyInterceptor(object) != null;
   }
 
   /**
@@ -73,7 +73,7 @@ public class EntityProxyUtils {
    * @return The BibernateByteBuddyProxyInterceptor object associated with the proxy object, or null if not found.
    */
 
-  public static BibernateByteBuddyProxyInterceptor getInterceptor(Object proxy) {
+  public static BibernateByteBuddyProxyInterceptor getProxyInterceptor(Object proxy) {
     try {
       Field field = proxy.getClass().getDeclaredField(INTERCEPTOR_FIELD_NAME);
       field.setAccessible(true);
