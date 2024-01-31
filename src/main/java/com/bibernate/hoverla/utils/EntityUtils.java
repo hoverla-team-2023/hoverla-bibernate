@@ -16,7 +16,7 @@ public class EntityUtils {
    */
   public static String toSnakeCase(String value) {
     if (value == null) {
-      return "";
+      return null;
     }
     return value.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
   }

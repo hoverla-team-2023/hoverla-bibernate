@@ -16,7 +16,7 @@ class EntityUtilsTest {
       arguments("firstName", "first_name"),
       arguments("BookAuthors", "book_authors"),
       arguments("", ""),
-      arguments(null, "")
+      arguments(null, null)
     );
   }
 
