@@ -59,6 +59,12 @@
       <version>${log4j-slf4j2-impl.version}</version>
       <scope>runtime</scope>
     </dependency>
+    <!-- Jackson XML -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-xml</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
     <!-- To support YAML configuration in Log4J Implementation -->
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
