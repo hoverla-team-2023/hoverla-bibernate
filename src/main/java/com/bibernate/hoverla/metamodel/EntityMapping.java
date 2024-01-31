@@ -2,9 +2,16 @@ package com.bibernate.hoverla.metamodel;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import lombok.Getter;
 
+/**
+ * Represents a single entity in the metamodel. It has information about the entity's related table name, column names, primary key, etc.
+ *
+ * @see FieldMapping
+ * @see Metamodel
+ */
 @Getter
 public class EntityMapping {
 
@@ -15,7 +22,6 @@ public class EntityMapping {
   private final Map<String, FieldMapping<?>> fieldMappingMap = new LinkedHashMap<>();
 
   public EntityMapping(Class<?> entityClass) {
-    // todo: convert the class name to snake_case format (e.g. from Bookmarks to bookmarks, from AuthorBooks to author-books)
     this(entityClass, entityClass.getSimpleName());
   }
 
@@ -24,8 +30,14 @@ public class EntityMapping {
     this.tableName = tableName;
   }
 
-  public FieldMapping<?> getPrimaryKeyMappings() {
-    return null;
+  public Optional<FieldMapping<?>> getPrimaryKeyMappings() {
+    return fieldMappingMap.values().stream()
+      .filter(FieldMapping::isPrimaryKey)
+      .findAny();
+  }
+
+  public void addFieldMapping(String fieldName, FieldMapping<?> fieldMapping) {
+    fieldMappingMap.put(fieldName, fieldMapping);
   }
 
 }
