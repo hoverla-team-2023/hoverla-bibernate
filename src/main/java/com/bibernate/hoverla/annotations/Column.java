@@ -5,21 +5,36 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-// todo: add JavaDoc
+/**
+ * This annotation is used to define a column in a table.
+ */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {
 
+  /**
+   * The name of the column. If not specified, the name of the field in snake case will be used.
+   */
   String name() default "";
 
+  /**
+   * Whether the column can be used in INSERT statements.
+   */
   boolean insertable() default true;
 
+  /**
+   * Whether the column can be used in UPDATE statements.
+   */
   boolean updatable() default true;
 
-  //  could be used during mapping a result set to entity
+  /**
+   * Whether the column is nullable.
+   */
   boolean nullable() default true;
 
-  // could be used during batch insertions
+  /**
+   * Whether the column should be unique
+   */
   boolean unique() default false;
 
 }
