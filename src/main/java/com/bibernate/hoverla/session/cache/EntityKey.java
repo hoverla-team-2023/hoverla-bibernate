@@ -1,4 +1,9 @@
 package com.bibernate.hoverla.session.cache;
+
+import java.util.Optional;
+
+import static com.bibernate.hoverla.utils.EntityUtils.getId;
+
 /**
  * The `EntityKey` record is used to uniquely identify an entity instance.
  * It consists of the entity's class and an identifier (ID).
@@ -17,16 +22,13 @@ public record EntityKey<T>(Class<T> entityType, Object id) {
     return new EntityKey<>(entityType, id);
   }
 
-  /**
-   * Creates a new `EntityKey` for the given entity. The entity's class and ID are extracted.
-   *
-   * @param entity The entity for which to create the key.
-   * @param <T>    The type of the entity.
-   * @return A new `EntityKey` instance for the entity.
-   */
-  //  public static <T> EntityKey<T> valueOf(T entity) {
-  //    var id = getId(entity);
-  //    var entityType = entity.getClass();
-  //    return new EntityKey(entityType, id);
-  //  }
+  public static <T> Optional<EntityKey<T>> valueOf(T entity) {
+    return Optional.ofNullable(entity)
+      .flatMap(e -> {
+        Optional<Object> id = getId(e);
+        return id.map(value -> Optional.of(entity.getClass())
+          .map(c -> (EntityKey<T>) new EntityKey<>(c, value))
+          .orElseThrow());
+      });
+  }
 }
