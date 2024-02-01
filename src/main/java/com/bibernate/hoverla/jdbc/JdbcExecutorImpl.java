@@ -20,6 +20,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JdbcExecutorImpl implements JdbcExecutor {
 
+  //TODO: maybe it is better to use some connection provider interface
+  // to have only one instance of this executor
+  // to manipulate of connection outside
   private final Connection connection;
 
   @Override
