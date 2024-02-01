@@ -33,6 +33,10 @@ public class SessionImpl implements Session {
     this.hoverlaSessionService = hoverlaSessionService;
   }
 
+  public SessionImpl(Connection connection) {
+    this.connection = connection;
+  }
+
   /**
    * Finds an entity of the specified class with the given ID.
    *
