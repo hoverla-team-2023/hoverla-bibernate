@@ -49,18 +49,6 @@ public class SessionFactoryImpl implements SessionFactory {
    *
    */
 
-//  public static SessionFactoryImpl getSessionFactoryInstance(DataSource dataSource) {
-//    if (sessionFactoryInstance == null) {
-//      synchronized (SessionFactoryImpl.class) {
-//        if (sessionFactoryInstance == null) {
-//          log.info("Add Hoverla Logo");
-//          sessionFactoryInstance = new SessionFactoryImpl(dataSource);
-//        }
-//      }
-//    }
-//    return sessionFactoryInstance;
-//  }
-
   /**
    * Opens a new `Session` instance.
    *
