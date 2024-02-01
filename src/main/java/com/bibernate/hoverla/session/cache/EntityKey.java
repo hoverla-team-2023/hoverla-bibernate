@@ -1,4 +1,4 @@
 package com.bibernate.hoverla.session.cache;
 
-public class EntityKey {
+public record EntityKey(Class<?> entityType, Object id) {
 }
