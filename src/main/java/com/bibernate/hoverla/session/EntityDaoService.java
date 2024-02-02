@@ -2,7 +2,7 @@ package com.bibernate.hoverla.session;
 
 import org.apache.commons.lang3.NotImplementedException;
 
-public class EntityPersister {
+public class EntityDaoService {
 
   public <T> T insert(T entity) {
     throw new NotImplementedException();//todo

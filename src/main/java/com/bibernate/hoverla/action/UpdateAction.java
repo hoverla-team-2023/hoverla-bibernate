@@ -1,6 +1,6 @@
 package com.bibernate.hoverla.action;
 
-import com.bibernate.hoverla.session.EntityPersister;
+import com.bibernate.hoverla.session.EntityDaoService;
 
 /**
  * Represents an action for updating an entity.
@@ -10,21 +10,21 @@ import com.bibernate.hoverla.session.EntityPersister;
 public class UpdateAction extends EntityAction {
 
   /**
-   * Constructs a new update action for the specified entity and entity persister.
+   * Constructs a new update action for the specified entity and entity dao service.
    *
    * @param entity          The entity instance to update.
-   * @param entityPersister The entity persister responsible for handling the entity.
+   * @param entityDaoService The entity dao service responsible for handling the entity.
    */
-  public UpdateAction(Object entity, EntityPersister entityPersister) {
-    super(entity, entityPersister);
+  public UpdateAction(Object entity, EntityDaoService entityDaoService) {
+    super(entity, entityDaoService);
   }
 
   /**
-   * Executes the update action by invoking the update method on the associated entity persister.
+   * Executes the update action by invoking the update method on the associated entity dao service.
    */
   @Override
   public void execute() {
-    entityPersister.update(entity);
+    entityDaoService.update(entity);
   }
 
   /**

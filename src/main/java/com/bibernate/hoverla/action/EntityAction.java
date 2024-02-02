@@ -1,6 +1,6 @@
 package com.bibernate.hoverla.action;
 
-import com.bibernate.hoverla.session.EntityPersister;
+import com.bibernate.hoverla.session.EntityDaoService;
 
 /**
  * Base class for actions relating to entities, such as insert, update, or delete operations.
@@ -14,19 +14,19 @@ public abstract class EntityAction {
   protected final Object entity;
 
   /**
-   * The entity persister responsible for handling the entity.
+   * The entity dao service responsible for handling the entity.
    */
-  protected final EntityPersister entityPersister;
+  protected final EntityDaoService entityDaoService;
 
   /**
-   * Constructs a new entity action with the specified entity and entity persister.
+   * Constructs a new entity action with the specified entity and entity dao service.
    *
    * @param entity          The entity instance.
-   * @param entityPersister The entity persister.
+   * @param entityDaoService The entity dao service.
    */
-  public EntityAction(Object entity, EntityPersister entityPersister) {
+  public EntityAction(Object entity, EntityDaoService entityDaoService) {
     this.entity = entity;
-    this.entityPersister = entityPersister;
+    this.entityDaoService = entityDaoService;
   }
 
   /**
