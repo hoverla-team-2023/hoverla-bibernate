@@ -41,12 +41,12 @@ public interface SessionImplementor extends Session {
   JdbcExecutor getJdbcExecutor();
 
   /**
-   * Retrieves the EntityPersister associated with this session.
+   * Retrieves the EntityDaoService associated with this session.
    *
-   * <p>The EntityPersister is responsible for managing the persistence and operations of entity objects within the session.
+   * <p>The EntityDaoService is responsible for managing the persistence and operations of entity objects within the session.
    * It provides essential functionality for creating, updating, and removing entities in the data store.</p>
    *
-   * @return The EntityPersister used by this session for managing entity objects.
+   * @return The EntityDaoService used by this session for managing entity objects.
    */
   EntityDaoService getEntityDaoService();
 

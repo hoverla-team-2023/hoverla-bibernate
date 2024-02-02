@@ -10,17 +10,17 @@ import com.bibernate.hoverla.session.EntityDaoService;
 public class InsertAction extends EntityAction {
 
   /**
-   * Constructs a new insert action for the specified entity and entity persister.
+   * Constructs a new insert action for the specified entity and entity dao service.
    *
    * @param entity          The entity instance to insert.
-   * @param entityDaoService The entity persister responsible for handling the entity.
+   * @param entityDaoService The entity dao service responsible for handling the entity.
    */
   public InsertAction(Object entity, EntityDaoService entityDaoService) {
     super(entity, entityDaoService);
   }
 
   /**
-   * Executes the insert action by invoking the insert method on the associated entity persister.
+   * Executes the insert action by invoking the insert method on the associated entity dao service.
    */
   @Override
   public void execute() {
