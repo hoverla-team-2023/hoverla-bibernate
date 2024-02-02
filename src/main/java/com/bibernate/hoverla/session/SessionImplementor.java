@@ -20,16 +20,16 @@ public interface SessionImplementor extends Session {
   SessionFactoryImplementor getSessionFactory();
 
   /**
-   * Retrieves the PersistenceContext associated with this session.
+   * Retrieves the first-level cache (PersistenceContext) used by this session.
    *
-   * @return The PersistenceContext used by this session for managing entity state.
+   * @return The first-level cache (PersistenceContext) associated with this session.
    */
   PersistenceContext getPersistenceContext();
 
   /**
    * Retrieves the ActionQueue associated with this session.
    *
-   * @return The ActionQueue used by this session for queuing and executing actions.
+   * @return The ActionQueue used by this session for managing EntityActions.
    */
   ActionQueue getActionQueue();
 
@@ -40,6 +40,14 @@ public interface SessionImplementor extends Session {
    */
   JdbcExecutor getJdbcExecutor();
 
-  EntityPersister getEntityPersister();
+  /**
+   * Retrieves the EntityPersister associated with this session.
+   *
+   * <p>The EntityPersister is responsible for managing the persistence and operations of entity objects within the session.
+   * It provides essential functionality for creating, updating, and removing entities in the data store.</p>
+   *
+   * @return The EntityPersister used by this session for managing entity objects.
+   */
+  EntityDaoService getEntityDaoService();
 
 }

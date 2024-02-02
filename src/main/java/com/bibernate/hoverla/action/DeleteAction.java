@@ -1,6 +1,6 @@
 package com.bibernate.hoverla.action;
 
-import com.bibernate.hoverla.session.EntityPersister;
+import com.bibernate.hoverla.session.EntityDaoService;
 
 /**
  * Represents an action for deleting an entity.
@@ -13,10 +13,10 @@ public class DeleteAction extends EntityAction {
    * Constructs a new delete action for the specified entity and entity persister.
    *
    * @param entity          The entity instance to delete.
-   * @param entityPersister The entity persister responsible for handling the entity.
+   * @param entityDaoService The entity persister responsible for handling the entity.
    */
-  protected DeleteAction(Object entity, EntityPersister entityPersister) {
-    super(entity, entityPersister);
+  protected DeleteAction(Object entity, EntityDaoService entityDaoService) {
+    super(entity, entityDaoService);
   }
 
   /**
@@ -24,7 +24,7 @@ public class DeleteAction extends EntityAction {
    */
   @Override
   public void execute() {
-    entityPersister.delete(entity);
+    entityDaoService.delete(entity);
   }
 
   /**

@@ -21,7 +21,7 @@ public class SessionImpl implements Session, SessionImplementor {
   private final ActionQueue actionQueue;
 
   @Getter
-  private final EntityPersister entityPersister;
+  private final EntityDaoService entityDaoService;
 
   @Getter
   private final JdbcExecutor jdbcExecutor;
@@ -32,7 +32,7 @@ public class SessionImpl implements Session, SessionImplementor {
     this.sessionFactory = sessionFactoryImplementor;
     this.actionQueue = new ActionQueue();
     this.jdbcExecutor = new JdbcExecutorImpl(sessionFactoryImplementor.getDataSource().getConnection());
-    entityPersister = null;
+    this.entityDaoService = null;
   }
 
   @Override
