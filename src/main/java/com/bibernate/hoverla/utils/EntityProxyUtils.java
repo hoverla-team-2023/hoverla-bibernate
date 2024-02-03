@@ -22,11 +22,13 @@ public class EntityProxyUtils {
   /**
    * Creates a proxy object of the given entity type with the provided session and entity ID.
    *
-   * @param session The session object to use for lazy loading.
+   * @param session    The session object to use for lazy loading.
    * @param entityType The entity type of the proxy object.
-   * @param entityId The ID of the entity.
-   * @param <T> The generic type of the entity.
+   * @param entityId   The ID of the entity.
+   * @param <T>        The generic type of the entity.
+   *
    * @return The proxy object of the entity type.
+   *
    * @throws BibernateException if the proxy creation fails.
    */
 
@@ -45,9 +47,7 @@ public class EntityProxyUtils {
         .getDeclaredConstructor()
         .newInstance();
 
-      Field field = entity.getClass().getDeclaredField(INTERCEPTOR_FIELD_NAME);
-      field.setAccessible(true);
-      field.set(entity, interceptor);
+      setInterceptorField(entity, interceptor);
 
       return entity;
     } catch (Exception e) {
@@ -56,10 +56,17 @@ public class EntityProxyUtils {
 
   }
 
+  private static <T> void setInterceptorField(T entity, BibernateByteBuddyProxyInterceptor interceptor) throws NoSuchFieldException, IllegalAccessException {
+    Field field = entity.getClass().getDeclaredField(INTERCEPTOR_FIELD_NAME);
+    field.setAccessible(true);
+    field.set(entity, interceptor);
+  }
+
   /**
    * Determines whether an object is a proxy.
    *
    * @param object The object to check.
+   *
    * @return true if the object is a proxy, false otherwise.
    */
   public static boolean isProxy(Object object) {
@@ -70,6 +77,7 @@ public class EntityProxyUtils {
    * Retrieves the interceptor object associated with the given proxy object.
    *
    * @param proxy The proxy object.
+   *
    * @return The BibernateByteBuddyProxyInterceptor object associated with the proxy object, or null if not found.
    */
 

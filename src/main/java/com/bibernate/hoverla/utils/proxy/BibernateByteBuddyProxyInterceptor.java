@@ -22,6 +22,9 @@ import net.bytebuddy.implementation.bind.annotation.This;
 @Getter
 public class BibernateByteBuddyProxyInterceptor {
 
+  /**
+   * The name of the interceptor field in the proxy class.
+   */
   public static final String INTERCEPTOR_FIELD_NAME = "$$bibernate_interceptor";
 
   private Session session;
@@ -32,12 +35,31 @@ public class BibernateByteBuddyProxyInterceptor {
 
   private Object loadedEntity;
 
+  /**
+   * Constructs a new BibernateByteBuddyProxyInterceptor with the given session, entity class, and entity ID.
+   *
+   * @param session     The session object used for lazy loading.
+   * @param entityClass The class of the entity being proxied.
+   * @param entityId    The ID of the entity.
+   */
   public BibernateByteBuddyProxyInterceptor(Session session, Class<?> entityClass, Object entityId) {
     this.session = session;
     this.entityClass = entityClass;
     this.entityId = entityId;
   }
 
+  /**
+   * Intercepts method calls on the proxy object.
+   *
+   * @param self        The proxy object.
+   * @param method      The method being invoked.
+   * @param args        The arguments passed to the method.
+   * @param superMethod A callable that represents the original method call.
+   *
+   * @return The result of the method call.
+   *
+   * @throws Throwable If an error occurs during the method call.
+   */
   @RuntimeType
   public Object intercept(@This Object self,
                           @Origin Method method,
@@ -55,10 +77,20 @@ public class BibernateByteBuddyProxyInterceptor {
     return method.invoke(loadedEntity, args);
   }
 
+  /**
+   * Checks if the given method is a getter for the entity's ID.
+   *
+   * @param method The method to check.
+   *
+   * @return True if the method is a getter for the ID, false otherwise.
+   */
   private boolean isIdGetter(Method method) {
     return method.getName().equals("getId"); // todo get it from metamodel
   }
 
+  /**
+   * Unlinks the session from this interceptor, preventing lazy loading if session is closed.
+   */
   public void unlinkSession() {
     this.session = null;
   }

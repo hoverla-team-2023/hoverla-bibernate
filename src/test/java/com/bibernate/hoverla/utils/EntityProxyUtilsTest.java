@@ -60,7 +60,7 @@ class EntityProxyUtilsTest {
   }
 
   @Test
-  public void test() {
+  public void whenUnlinkSession_thenLazyLoadingExceptionThrown() {
     User proxy = EntityProxyUtils.createProxy(session, User.class, 155L);
     BibernateByteBuddyProxyInterceptor interceptor = EntityProxyUtils.getProxyInterceptor(proxy);
 
