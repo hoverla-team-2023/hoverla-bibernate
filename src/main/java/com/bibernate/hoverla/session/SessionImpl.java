@@ -3,8 +3,11 @@ package com.bibernate.hoverla.session;
 import org.apache.commons.lang3.NotImplementedException;
 
 import com.bibernate.hoverla.action.ActionQueue;
+import com.bibernate.hoverla.exceptions.BibernateException;
 import com.bibernate.hoverla.jdbc.JdbcExecutor;
 import com.bibernate.hoverla.jdbc.JdbcExecutorImpl;
+import com.bibernate.hoverla.query.Query;
+import com.bibernate.hoverla.query.QueryImpl;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -30,14 +33,20 @@ public class SessionImpl implements Session, SessionImplementor {
   public SessionImpl(SessionFactoryImplementor sessionFactoryImplementor) {
     this.persistenceContext = new PersistenceContext();
     this.sessionFactory = sessionFactoryImplementor;
+    this.entityDaoService = new EntityDaoService();
     this.actionQueue = new ActionQueue();
     this.jdbcExecutor = new JdbcExecutorImpl(sessionFactoryImplementor.getDataSource().getConnection());
-    this.entityDaoService = null;
   }
 
   @Override
   public <T> T find(Class<T> entityClass, Object id) {
     throw new NotImplementedException();
+  }
+
+  @Override
+  public <T> Query<T> createQuery(String criteria, Class<T> entityClass) {
+    ensureEntityClassIsRegistered(entityClass);
+    return new QueryImpl<>(this, criteria, entityClass);
   }
 
   @Override
@@ -69,6 +78,20 @@ public class SessionImpl implements Session, SessionImplementor {
   @Override
   public void close() {
     //todo
+  }
+
+  private <T> void ensureEntityClassIsRegistered(Class<T> entityClass) {
+    if (validateEntityClass(entityClass)) {
+      throw new BibernateException("""
+                                     The specified class %s is not registered as an entity.
+                                     Ensure that the class has been added in configuration and marked as an entity.
+                                     """
+                                     .formatted(entityClass));
+    }
+  }
+
+  private <T> boolean validateEntityClass(Class<T> entityClass) {
+    return !sessionFactory.getMetamodel().getEntityMappingMap().containsKey(entityClass);
   }
 
 }

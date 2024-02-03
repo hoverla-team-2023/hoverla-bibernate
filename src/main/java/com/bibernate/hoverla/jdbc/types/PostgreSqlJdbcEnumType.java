@@ -6,14 +6,14 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 /**
- * The PostgreSqlJdbcEnumType class is an implementation of the {@link JdbcType} interface, specifically
+ * The PostgreSqlJdbcEnumType class is an implementation of the {@link BibernateJdbcType} interface, specifically
  * designed for working with PostgreSQL ENUM types. It allows for extracting and binding values of a
  * specific enum type T to/from a ResultSet and PreparedStatement for SQL queries and updates involving
  * ENUM columns in PostgreSQL.
  *
  * @param <T> The enum type to work with in the JDBC context.
  */
-public class PostgreSqlJdbcEnumType<T extends Enum<T>> implements JdbcType<T> {
+public class PostgreSqlJdbcEnumType<T extends Enum<T>> implements BibernateJdbcType<T> {
 
   private final Class<T> enumClass;
 

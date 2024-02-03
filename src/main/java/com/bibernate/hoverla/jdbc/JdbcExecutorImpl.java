@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * The JdbcExecutorImpl class is an implementation of the JdbcExecutor interface, which provides methods
- * for executing SQL queries and updates using JDBC. This implementation allows you to perform various
+ * for executing SQL queries and updates using JDBC. This implementation allows to perform various
  * database operations, including select queries, insertions, updates, deletions, and working with
  * generated keys, using a provided JDBC Connection.
  */

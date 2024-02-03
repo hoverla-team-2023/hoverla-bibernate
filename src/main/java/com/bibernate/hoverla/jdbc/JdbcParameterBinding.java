@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 
 /**
  * The JdbcParameterBinding class represents a parameter binding for a SQL query using JDBC.
@@ -14,10 +15,15 @@ import lombok.AllArgsConstructor;
  * @param <T> The type of the bind value.
  */
 @AllArgsConstructor
+@ToString
 public class JdbcParameterBinding<T> {
 
   private T bindValue;
   private JdbcParameterBinder<T> binder;
+
+  public static <T> JdbcParameterBinding<?> bindParameter(Object bindValue, JdbcParameterBinder<?> jdbcType) {
+    return new JdbcParameterBinding<>((T) bindValue, (JdbcParameterBinder<T>) jdbcType);
+  }
 
   /**
    * Binds the associated bind value to the provided PreparedStatement at the specified index
@@ -25,6 +31,7 @@ public class JdbcParameterBinding<T> {
    *
    * @param preparedStatement The PreparedStatement to which the bind value will be bound.
    * @param index             The index at which to bind the value in the PreparedStatement.
+   *
    * @throws SQLException If an SQL exception occurs while binding the parameter.
    */
   public void doBind(PreparedStatement preparedStatement, int index) throws SQLException {

@@ -1,6 +1,6 @@
 package com.bibernate.hoverla.metamodel;
 
-import com.bibernate.hoverla.jdbc.types.JdbcType;
+import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -16,7 +16,7 @@ import lombok.Getter;
 public class FieldMapping<T> {
 
   private String columnName;
-  private JdbcType<T> jdbcType;
+  private BibernateJdbcType<?> jdbcType;
   private Class<T> fieldType;
   private String fieldName;
   private boolean isInsertable;

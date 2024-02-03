@@ -2,7 +2,8 @@ package com.bibernate.hoverla.metamodel;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
+
+import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
 
 import lombok.Getter;
 
@@ -30,10 +31,11 @@ public class EntityMapping {
     this.tableName = tableName;
   }
 
-  public Optional<FieldMapping<?>> getPrimaryKeyMappings() {
+  public FieldMapping<?> getPrimaryKeyMapping() {
     return fieldMappingMap.values().stream()
       .filter(FieldMapping::isPrimaryKey)
-      .findAny();
+      .findAny()
+      .orElseThrow(() -> new InvalidEntityDeclarationException("No primary key id declared"));
   }
 
   public void addFieldMapping(String fieldName, FieldMapping<?> fieldMapping) {

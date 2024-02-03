@@ -15,7 +15,7 @@ import com.bibernate.hoverla.annotations.Entity;
 import com.bibernate.hoverla.annotations.Id;
 import com.bibernate.hoverla.annotations.Table;
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
-import com.bibernate.hoverla.jdbc.types.JdbcType;
+import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
 import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProvider;
 import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
@@ -137,9 +137,9 @@ public class MetamodelScanner {
       .map(columnMapper);
   }
 
-  private <T> JdbcType<T> resolveJdbcType(Field field) {
+  private <T> BibernateJdbcType<? super T> resolveJdbcType(Field field) {
     @SuppressWarnings("unchecked")
-    Class<? extends JdbcType<T>> jdbcTypeClass = (Class<? extends JdbcType<T>>)
+    Class<? extends BibernateJdbcType<T>> jdbcTypeClass = (Class<? extends BibernateJdbcType<T>>)
       Optional.ofNullable(field.getAnnotation(com.bibernate.hoverla.annotations.JdbcType.class))
         .map(com.bibernate.hoverla.annotations.JdbcType::value)
         .orElse(null);

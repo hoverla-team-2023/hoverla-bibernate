@@ -11,5 +11,5 @@ import com.bibernate.hoverla.jdbc.JdbcResultExtractor;
  *
  * @param <T> The data type to work with in the JDBC context.
  */
-public interface JdbcType<T> extends JdbcResultExtractor<T>, JdbcParameterBinder<T> {
+public interface BibernateJdbcType<T> extends JdbcResultExtractor<T>, JdbcParameterBinder<T> {
 }
