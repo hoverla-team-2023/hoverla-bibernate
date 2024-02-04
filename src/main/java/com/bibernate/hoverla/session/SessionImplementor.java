@@ -1,5 +1,8 @@
 package com.bibernate.hoverla.session;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
 import com.bibernate.hoverla.action.ActionQueue;
 import com.bibernate.hoverla.jdbc.JdbcExecutor;
 
@@ -49,5 +52,10 @@ public interface SessionImplementor extends Session {
    * @return The EntityDaoService used by this session for managing entity objects.
    */
   EntityDaoService getEntityDaoService();
+
+  //todo implement clear session caches
+  void invalidateCaches();
+
+  Connection getConnection() throws SQLException;
 
 }
