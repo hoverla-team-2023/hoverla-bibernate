@@ -21,8 +21,18 @@ public class JdbcParameterBinding<T> {
   private T bindValue;
   private JdbcParameterBinder<T> binder;
 
-  public static <T> JdbcParameterBinding<?> bindParameter(Object bindValue, JdbcParameterBinder<?> jdbcType) {
-    return new JdbcParameterBinding<>((T) bindValue, (JdbcParameterBinder<T>) jdbcType);
+  /**
+   * Binds a value to a JDBC parameter using a specified JDBC parameter binder.
+   *
+   * @param bindValue           The value to bind to the JDBC parameter.
+   * @param jdbcParameterBinder The JDBC parameter binder responsible for binding the value.
+   * @param <T>                 The type of the value to be bound.
+   *
+   * @return A JDBC parameter binding containing the bound value and binder.
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> JdbcParameterBinding<?> bindParameter(Object bindValue, JdbcParameterBinder<?> jdbcParameterBinder) {
+    return new JdbcParameterBinding<>((T) bindValue, (JdbcParameterBinder<T>) jdbcParameterBinder);
   }
 
   /**

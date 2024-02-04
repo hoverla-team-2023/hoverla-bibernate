@@ -20,9 +20,21 @@ public class PersistenceContext {
     entityKeyEntityEntryMap.put(entityKey, entityEntry);
   }
 
+  /**
+   * Puts an entity into the persistence context if it is not already present.
+   * If the entity key's entity type is not assignable from the entity's class,
+   * a {@link BibernateException} is thrown.
+   *
+   * @param entityKey The key associated with the entity.
+   * @param entity    The entity to be put into the persistence context.
+   *
+   * @return The entity that was put into the persistence context, or the existing entity if one was already present.
+   *
+   * @throws BibernateException If the entity key's entity type is not assignable from the entity's class.
+   */
   public Object putEntityIfAbsent(EntityKey entityKey, Object entity) {
     if (!entityKey.entityType().isAssignableFrom(entity.getClass())) {
-      throw new BibernateException();
+      throw new BibernateException("Incompatible entity type. Expected: " + entityKey.entityType() + ", Actual: " + entity.getClass());
     }
     return entityKeyEntityEntryMap.computeIfAbsent(entityKey, key ->
         EntityEntry.builder()

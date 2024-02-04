@@ -1,6 +1,5 @@
 package com.bibernate.hoverla.utils;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -9,6 +8,7 @@ import java.util.List;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -17,8 +17,6 @@ import com.bibernate.grammar.WhereStatementLexer;
 import com.bibernate.grammar.WhereStatementParser;
 import com.bibernate.hoverla.exceptions.BibernateBqlException;
 import com.bibernate.hoverla.exceptions.BibernateException;
-import com.bibernate.hoverla.metamodel.EntityMapping;
-import com.bibernate.hoverla.metamodel.Metamodel;
 import com.bibernate.hoverla.session.cache.EntityKey;
 
 import lombok.AccessLevel;
@@ -56,37 +54,43 @@ public class EntityUtils {
     WhereStatementLexer lexer = new WhereStatementLexer(CharStreams.fromString(whereStatement));
     WhereStatementParser parser = new WhereStatementParser(new CommonTokenStream(lexer));
 
+    final List<String> errorMessages = listenErrorMessages(parser);
+
+    ParseTree tree = parser.start();
+    validateSyntaxErrors(parser, errorMessages);
+
+    return tree;
+  }
+
+  private static void validateSyntaxErrors(WhereStatementParser parser, List<String> errorMessages) {
+    int numberOfSyntaxErrors = parser.getNumberOfSyntaxErrors();
+    if (numberOfSyntaxErrors > 0 || !errorMessages.isEmpty()) {
+      throw new BibernateBqlException(String.join(",", errorMessages));
+    }
+  }
+
+  private static List<String> listenErrorMessages(WhereStatementParser parser) {
     final List<String> errorMessages = new ArrayList<>();
-    lexer.addErrorListener(new BaseErrorListener() {
+    parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
+    parser.addErrorListener(new BaseErrorListener() {
       @Override
       public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
         errorMessages.add("line " + line + ":" + charPositionInLine + " " + msg);
       }
     });
-
-    ParseTree tree = parser.start();
-
-    int numberOfSyntaxErrors = parser.getNumberOfSyntaxErrors();
-    if (numberOfSyntaxErrors > 0 || !errorMessages.isEmpty()) {
-      throw new BibernateBqlException(String.join(",", errorMessages));
-    }
-    return tree;
+    return errorMessages;
   }
 
   /**
-   * Retrieves the entity key from the given entity object using the provided metamodel.
+   * Retrieves an {@link EntityKey} for the specified entity based on its primary key field.
    *
-   * @param entityClass the class of the entity object
-   * @param entity      the entity object
-   * @param metamodel   the metamodel that represents scanned entities with their metadata
-   *
-   * @return the entity key
-   *
-   * @throws BibernateException if there is an error getting the entity key
+   * @param entityClass       The class of the entity.
+   * @param entity            The entity instance from which to retrieve the primary key.
+   * @param primaryKeyFieldName The name of the primary key field in the entity class.
+   * @return An {@link EntityKey} representing the entity's primary key.
+   * @throws BibernateException If an error occurs while attempting to retrieve the entity key.
    */
-  public static EntityKey getEntityKeyFromEntity(Class<?> entityClass, Object entity, Metamodel metamodel) {
-    EntityMapping entityMapping = metamodel.getEntityMappingMap().get(entityClass);
-    String primaryKeyFieldName = entityMapping.getPrimaryKeyMapping().getFieldName();
+  public static EntityKey getEntityKey(Class<?> entityClass, Object entity, String primaryKeyFieldName) {
     try {
       Field declaredField = entityClass.getDeclaredField(primaryKeyFieldName);
       declaredField.setAccessible(true);
@@ -95,7 +99,6 @@ public class EntityUtils {
     } catch (IllegalAccessException | NoSuchFieldException exc) {
       throw new BibernateException("Failed to get entity key for: " + entityClass, exc);
     }
-
   }
 
   public static <T> T newInstanceOf(Class<T> entityType) {

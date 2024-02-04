@@ -1,24 +1,22 @@
 package com.bibernate.hoverla.query;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.antlr.v4.runtime.tree.ParseTree;
-
 import com.bibernate.hoverla.jdbc.JdbcResultExtractor;
 import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
 import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.session.Session;
 import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.cache.EntityKey;
 import com.bibernate.hoverla.utils.EntityUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static com.bibernate.hoverla.utils.EntityUtils.getEntityKeyFromEntity;
+import static com.bibernate.hoverla.utils.EntityUtils.getEntityKey;
 import static com.bibernate.hoverla.utils.EntityUtils.parseWhereStatement;
 
 /**
@@ -42,8 +40,8 @@ import static com.bibernate.hoverla.utils.EntityUtils.parseWhereStatement;
  *
  * }</pre>
  *
+ * see: {@link Session#createQuery(String, Class)}
  * <p>Note that the query language is case-sensitive.</p>
- * @see
  *
  * @param <T> The type of entities or objects that the query will return.
  */
@@ -63,14 +61,27 @@ public class QueryImpl<T> implements Query<T> {
     this.session = session;
   }
 
+  /**
+   * Sets a parameter for the query.
+   *
+   * @param paramName  The name of the parameter.
+   * @param paramValue The value of the parameter.
+   *
+   * @return The QueryImpl instance.
+   */
   public QueryImpl<T> setParameter(String paramName, Object paramValue) {
     parameters.put(paramName, paramValue);
     return this;
   }
 
+  /**
+   * Executes the query and returns the result as a list of entities.
+   *
+   * @return The list of entities resulting from the query.
+   */
   public List<T> getResult() {
     log.debug("Executing query with expression: {}", queryExpression);
-    SqlJdbcStatement<T> sqlStatement = generateSqlJdbcStatement();
+    SqlJdbcStatement sqlStatement = generateSqlJdbcStatement();
 
     List<Object[]> result = session.getJdbcExecutor()
       .executeSelectQuery(sqlStatement.getSqlTemplate(),
@@ -79,7 +90,7 @@ public class QueryImpl<T> implements Query<T> {
 
     log.debug("Query executed successfully. Mapping results to entities.");
     List<T> entities = result.stream()
-      .map(this::map)
+      .map(this::mapRowToEntity)
       .collect(Collectors.toList());
 
     log.debug("Mapping completed. Returning {} entities.", entities.size());
@@ -87,44 +98,61 @@ public class QueryImpl<T> implements Query<T> {
     return entities;
   }
 
-  public SqlJdbcStatement<T> generateSqlJdbcStatement() {
+  public SqlJdbcStatement generateSqlJdbcStatement() {
     log.debug("Generating SQL statement for query: {}, entityClass: {}", queryExpression, resultType);
     var entityMapping = getEntityMapping();
-    var fieldMappings = entityMapping.getFieldMappingMap().values();
 
-    var columnNames = getColumnNames(fieldMappings);
-    var jdbcResultExtractors = getJdbcTypes(fieldMappings);
+    var columnNames = getColumnNames(entityMapping);
+    var jdbcResultExtractors = getJdbcTypes(entityMapping);
+    var tableName = entityMapping.getTableName();
 
-    ParseTree abstractSyntaxTree = parseWhereStatement(queryExpression);
-    BibernateWhereStatementVisitor visitor = new BibernateWhereStatementVisitor(session.getSessionFactory().getMetamodel(), resultType, parameters);
-    String sqlWhereStatement = visitor.visit(abstractSyntaxTree);
+    var abstractSyntaxTree = parseWhereStatement(queryExpression);
+    var visitor = new BibernateWhereStatementVisitor(session.getSessionFactory().getMetamodel(), resultType, parameters);
+    var sqlWhereStatement = visitor.visit(abstractSyntaxTree);
 
-    String sqlTemplate = SELECT_TEMPLATE.formatted(columnNames, entityMapping.getTableName(), sqlWhereStatement);
+    var sqlTemplate = SELECT_TEMPLATE.formatted(columnNames, tableName, sqlWhereStatement);
 
     log.debug("SQL statement generated: {}", sqlTemplate);
 
-    return new SqlJdbcStatement<>(sqlTemplate,
-                                  visitor.getJdbcParameterBindings(),
-                                  jdbcResultExtractors.toArray(new JdbcResultExtractor<?>[0]));
+    return new SqlJdbcStatement(sqlTemplate,
+                                visitor.getJdbcParameterBindings(),
+                                jdbcResultExtractors.toArray(new JdbcResultExtractor<?>[0]));
   }
 
-  private List<? extends BibernateJdbcType<?>> getJdbcTypes(Collection<FieldMapping<?>> fieldMappings) {
-    return fieldMappings.stream()
+  /**
+   * Retrieves the JDBC types from the entity mapping.
+   *
+   * @param entityMapping The entity mapping for the entity.
+   *
+   * @return A list of JDBC types.
+   */
+  private List<? extends BibernateJdbcType<?>> getJdbcTypes(EntityMapping entityMapping) {
+    return entityMapping.getFieldMappingMap()
+      .values()
+      .stream()
       .map(FieldMapping::getJdbcType)
-      .toList();
+      .collect(Collectors.toList());
   }
 
-  private String getColumnNames(Collection<FieldMapping<?>> fieldMappings) {
-    return fieldMappings.stream()
+  private String getColumnNames(EntityMapping entityMapping) {
+    return entityMapping.getFieldMappingMap().values()
+      .stream()
       .map(FieldMapping::getColumnName)
       .collect(Collectors.joining(", "));
   }
 
+  /**
+   * Maps a row of query results to an entity.
+   *
+   * @param row The row of query results.
+   *
+   * @return The entity created from the row of results.
+   */
   @SuppressWarnings("unchecked")
-  private T map(Object[] row) {
+  private T mapRowToEntity(Object[] row) {
     EntityMapping entityMapping = getEntityMapping();
     T entity = createEntityFromRow(row, entityMapping);
-    EntityKey entityKey = getEntityKeyFromEntity(resultType, entity, session.getSessionFactory().getMetamodel());
+    EntityKey entityKey = getEntityKey(resultType, entity, entityMapping.getPrimaryKeyMapping().getFieldName());
 
     return (T) session
       .getPersistenceContext()

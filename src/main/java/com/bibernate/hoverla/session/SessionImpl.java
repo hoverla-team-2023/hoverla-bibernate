@@ -80,6 +80,15 @@ public class SessionImpl implements Session, SessionImplementor {
     //todo
   }
 
+  /**
+   * Ensures that the provided entity class is registered with the session factory.
+   * If the entity class is not registered, a {@link BibernateException} is thrown with an error message.
+   *
+   * @param <T>         type of the entity class.
+   * @param entityClass The entity class to validate.
+   *
+   * @throws BibernateException If the entity class is not registered with the session factory.
+   */
   private <T> void ensureEntityClassIsRegistered(Class<T> entityClass) {
     if (validateEntityClass(entityClass)) {
       throw new BibernateException("""
@@ -90,6 +99,14 @@ public class SessionImpl implements Session, SessionImplementor {
     }
   }
 
+  /**
+   * Validates whether the provided entity class is registered with the session factory.
+   *
+   * @param <T>         type of the entity class.
+   * @param entityClass The entity class to validate.
+   *
+   * @return {@code true} if the entity class is not registered, {@code false} otherwise.
+   */
   private <T> boolean validateEntityClass(Class<T> entityClass) {
     return !sessionFactory.getMetamodel().getEntityMappingMap().containsKey(entityClass);
   }

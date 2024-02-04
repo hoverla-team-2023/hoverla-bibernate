@@ -31,11 +31,19 @@ public class EntityMapping {
     this.tableName = tableName;
   }
 
+  /**
+   * Retrieves the primary key mapping from the fieldMappingMap.
+   *
+   * @return The primary key mapping.
+   *
+   * @throws InvalidEntityDeclarationException If no primary key is declared in the fieldMappingMap.
+   */
+
   public FieldMapping<?> getPrimaryKeyMapping() {
     return fieldMappingMap.values().stream()
       .filter(FieldMapping::isPrimaryKey)
       .findAny()
-      .orElseThrow(() -> new InvalidEntityDeclarationException("No primary key id declared"));
+      .orElseThrow(() -> new InvalidEntityDeclarationException("No primary key id declared"));//should never happen
   }
 
   public void addFieldMapping(String fieldName, FieldMapping<?> fieldMapping) {
