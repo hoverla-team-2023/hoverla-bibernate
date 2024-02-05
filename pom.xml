@@ -37,6 +37,8 @@
     <testcontainer.postgresql.version>1.19.3</testcontainer.postgresql.version>
     <postgresql.version>42.6.0</postgresql.version>
     <byte-buddy.version>1.14.10</byte-buddy.version>
+    <HikariCP.version>5.0.1</HikariCP.version>
+    <antlr4-runtime.version>4.7.1</antlr4-runtime.version>
   </properties>
 
 
@@ -161,7 +163,12 @@
     <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
-      <version>5.0.1</version>
+      <version>${HikariCP.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.antlr</groupId>
+      <artifactId>antlr4-runtime</artifactId>
+      <version>${antlr4-runtime.version}</version>
     </dependency>
   </dependencies>
 
@@ -203,6 +210,41 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.0.0-M5</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4-maven-plugin</artifactId>
+        <version>4.7.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>antlr4</goal>
+            </goals>
+            <configuration>
+              <visitor>true</visitor>
+              <listener>false</listener>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${basedir}/target/generated-sources/antlr4</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
