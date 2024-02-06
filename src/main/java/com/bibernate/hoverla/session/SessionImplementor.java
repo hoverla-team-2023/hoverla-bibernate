@@ -2,6 +2,7 @@ package com.bibernate.hoverla.session;
 
 import com.bibernate.hoverla.action.ActionQueue;
 import com.bibernate.hoverla.jdbc.JdbcExecutor;
+import com.bibernate.hoverla.metamodel.EntityMapping;
 
 /**
  * An internal contract that extends the Session interface with additional methods for internal framework usage.
@@ -49,5 +50,9 @@ public interface SessionImplementor extends Session {
    * @return The EntityDaoService used by this session for managing entity objects.
    */
   EntityDaoService getEntityDaoService();
+
+  <T> EntityMapping getEntityMapping(Class<T> entity);
+
+  <T> EntityDetails getEntityDetails(T entity);
 
 }

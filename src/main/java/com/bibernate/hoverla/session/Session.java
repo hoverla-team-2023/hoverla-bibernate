@@ -56,11 +56,13 @@ public interface Session extends AutoCloseable {
 
   <T> void persist(T entity);
 
+  <T> T getReference(Class<T> entityClass, Object id);
+
   <T> T merge(T entity);
 
   void detach(Object entity);
 
-  void delete(Object entity);
+  void remove(Object entity);
 
   void flush();
 

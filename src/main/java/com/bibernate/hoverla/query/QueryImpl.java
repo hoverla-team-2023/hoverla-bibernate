@@ -160,10 +160,7 @@ public class QueryImpl<T> implements Query<T> {
   }
 
   private EntityMapping getEntityMapping() {
-    return session.getSessionFactory()
-      .getMetamodel()
-      .getEntityMappingMap()
-      .get(resultType);
+    return session.getEntityMapping(resultType);
   }
 
   private T createEntityFromRow(Object[] row, EntityMapping entityMapping) {
