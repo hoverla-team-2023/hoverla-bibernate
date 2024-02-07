@@ -1,5 +1,7 @@
 package com.bibernate.hoverla.configuration.config;
 
+import java.util.Map;
+
 import com.bibernate.hoverla.exceptions.ConfigurationException;
 
 /**
@@ -12,6 +14,7 @@ public interface CommonConfig {
   String XML_PATTERN = "xml";
   String YML_PATTERN = "yml";
   String PROPERTIES_PATTERN = "properties";
+
 
   /**
    * Retrieves the value of a specified property.
@@ -29,6 +32,14 @@ public interface CommonConfig {
    * @param value The value to set for the specified property.
    */
   void setProperty(String key, String value);
+
+  /**
+   * Retrieves all properties.
+   *
+   * @return a {@code Map} containing key-value pairs of properties
+   * where keys are of type {@code String} and values are of type {@code String}
+   */
+  Map<String, String> getAllProperties(String prefix);
 
   /**
    * Loads configuration from the specified path based on the file extension.

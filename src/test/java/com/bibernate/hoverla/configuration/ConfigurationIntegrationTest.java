@@ -7,6 +7,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import com.bibernate.hoverla.configuration.config.CommonConfig;
 
 public class ConfigurationIntegrationTest {
+  private static final String URL = "dataSource.jdbcUrl";
+  private static final String USERNAME = "dataSource.username";
+  private static final String PASSWORD = "dataSource.password";
 
   @Test
   public void testSessionFactoryCreation() {
@@ -19,15 +22,16 @@ public class ConfigurationIntegrationTest {
 
       // Load properties and then override the connection details with those from the container
       CommonConfig commonConfig = CommonConfig.of("config.properties");
-      commonConfig.setProperty(Configuration.URL, postgresqlContainer.getJdbcUrl());
-      commonConfig.setProperty(Configuration.USERNAME, postgresqlContainer.getUsername());
-      commonConfig.setProperty(Configuration.PASSWORD, postgresqlContainer.getPassword());
+      commonConfig.setProperty(URL, postgresqlContainer.getJdbcUrl());
+      commonConfig.setProperty(USERNAME, postgresqlContainer.getUsername());
+      commonConfig.setProperty(PASSWORD, postgresqlContainer.getPassword());
 
       Configuration configuration = Configuration.builder()
         .properties(commonConfig)
         .build();
 
       Assertions.assertNotNull(configuration.getSessionFactory());
+      Assertions.assertNotNull(configuration.getSessionFactory().getDataSource());
     }
   }
 }

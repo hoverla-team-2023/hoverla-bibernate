@@ -2,11 +2,14 @@ package com.bibernate.hoverla.configuration.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import com.bibernate.hoverla.exceptions.ConfigurationException;
 
 public class PropertiesConfig implements CommonConfig {
+
   private final Properties properties;
 
   public PropertiesConfig(String name) {
@@ -20,7 +23,17 @@ public class PropertiesConfig implements CommonConfig {
 
   @Override
   public void setProperty(String key, String value) {
-     properties.put(key, value);
+    properties.put(key, value);
+  }
+
+  @Override
+  public Map<String, String> getAllProperties(String prefix) {
+    return properties.entrySet().stream()
+      .filter(entry -> entry.getKey().toString().contains(prefix))
+      .collect(Collectors.toMap(
+        e -> e.getKey().toString(),
+        e -> e.getValue().toString()
+      ));
   }
 
   private static Properties readProperties(String name) {
@@ -35,4 +48,5 @@ public class PropertiesConfig implements CommonConfig {
       throw new ConfigurationException("Error loading properties file", e);
     }
   }
+
 }

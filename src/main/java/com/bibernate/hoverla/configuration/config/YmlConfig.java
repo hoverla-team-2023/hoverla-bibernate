@@ -1,7 +1,9 @@
 package com.bibernate.hoverla.configuration.config;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import com.bibernate.hoverla.exceptions.ConfigurationException;
 import com.bibernate.hoverla.utils.ConfigUtils;
@@ -25,6 +27,16 @@ public class YmlConfig implements CommonConfig {
   @Override
   public void setProperty(String key, String value) {
      properties.put(key, value);
+  }
+
+  @Override
+  public Map<String, String> getAllProperties(String prefix) {
+    return properties.entrySet().stream()
+      .filter(entry -> entry.getKey().toString().contains(prefix))
+      .collect(Collectors.toMap(
+        e -> e.getKey().toString(),
+        e -> e.getValue().toString()
+      ));
   }
 
 
