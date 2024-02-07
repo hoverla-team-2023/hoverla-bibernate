@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
@@ -17,6 +18,9 @@ import com.bibernate.grammar.WhereStatementLexer;
 import com.bibernate.grammar.WhereStatementParser;
 import com.bibernate.hoverla.exceptions.BibernateBqlException;
 import com.bibernate.hoverla.exceptions.BibernateException;
+import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
+import com.bibernate.hoverla.metamodel.EntityMapping;
+import com.bibernate.hoverla.metamodel.FieldMapping;
 import com.bibernate.hoverla.session.cache.EntityKey;
 
 import lombok.AccessLevel;
@@ -122,6 +126,21 @@ public class EntityUtils {
         entity.getClass().getName())
       );
     }
+  }
+
+  public static String getColumnNames(EntityMapping entityMapping) {
+    return entityMapping.getFieldMappingMap().values()
+      .stream()
+      .map(FieldMapping::getColumnName)
+      .collect(Collectors.joining(", "));
+  }
+
+  public static List<? extends BibernateJdbcType<?>> getJdbcTypes(EntityMapping entityMapping) {
+    return entityMapping.getFieldMappingMap()
+      .values()
+      .stream()
+      .map(FieldMapping::getJdbcType)
+      .collect(Collectors.toList());
   }
 
 }
