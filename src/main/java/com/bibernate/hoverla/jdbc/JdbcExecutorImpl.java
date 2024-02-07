@@ -10,6 +10,7 @@ import java.util.List;
 import com.bibernate.hoverla.exceptions.BibernateSqlException;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The JdbcExecutorImpl class is an implementation of the JdbcExecutor interface, which provides methods
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
  * database operations, including select queries, insertions, updates, deletions, and working with
  * generated keys, using a provided JDBC Connection.
  */
+@Slf4j
 @RequiredArgsConstructor
 public class JdbcExecutorImpl implements JdbcExecutor {
 
@@ -62,6 +64,7 @@ public class JdbcExecutorImpl implements JdbcExecutor {
 
   @Override
   public int executeUpdate(String sqlTemplate, JdbcParameterBinding<?>[] bindValues) {
+    log.debug("Executing update: {}", sqlTemplate);
     try (PreparedStatement preparedStatement = connection.prepareStatement(sqlTemplate)) {
       bindParameters(preparedStatement, bindValues);
       return preparedStatement.executeUpdate();
