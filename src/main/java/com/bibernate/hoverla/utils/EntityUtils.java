@@ -3,7 +3,10 @@ package com.bibernate.hoverla.utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -25,6 +28,10 @@ import com.bibernate.hoverla.session.cache.EntityKey;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+
+import static java.util.stream.Collectors.toMap;
+
+import static org.apache.logging.log4j.core.util.ReflectionUtil.getFieldValue;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EntityUtils {
@@ -88,10 +95,12 @@ public class EntityUtils {
   /**
    * Retrieves an {@link EntityKey} for the specified entity based on its primary key field.
    *
-   * @param entityClass       The class of the entity.
-   * @param entity            The entity instance from which to retrieve the primary key.
+   * @param entityClass         The class of the entity.
+   * @param entity              The entity instance from which to retrieve the primary key.
    * @param primaryKeyFieldName The name of the primary key field in the entity class.
+   *
    * @return An {@link EntityKey} representing the entity's primary key.
+   *
    * @throws BibernateException If an error occurs while attempting to retrieve the entity key.
    */
   public static EntityKey getEntityKey(Class<?> entityClass, Object entity, String primaryKeyFieldName) {
@@ -141,6 +150,29 @@ public class EntityUtils {
       .stream()
       .map(FieldMapping::getJdbcType)
       .collect(Collectors.toList());
+  }
+
+  /**
+   * Converts the given <code>entity</code> into a map of field name and field value. Only {@link FieldMapping#isUpdatable() updatable} fields are included
+   * in the result map.
+   *
+   * @param entityMapping entity mapping
+   * @param entity        entity to convert
+   *
+   * @return map with field names and their values
+   */
+  public static Map<String, Object> getSnapshot(EntityMapping entityMapping, Object entity) {
+    Class<?> entityType = entityMapping.getEntityClass();
+
+    return Arrays.stream(entityType.getDeclaredFields())
+      .filter(field -> isUpdatableField(entityMapping, field))
+      .collect(toMap(Field::getName, field -> getFieldValue(field, entity)));
+  }
+
+  private static boolean isUpdatableField(EntityMapping entityMapping, Field field) {
+    return Optional.ofNullable(entityMapping.getFieldMapping(field.getName()))
+      .map(FieldMapping::isUpdatable)
+      .orElse(false);
   }
 
 }
