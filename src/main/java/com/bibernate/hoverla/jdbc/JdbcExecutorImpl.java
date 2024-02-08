@@ -30,6 +30,7 @@ public class JdbcExecutorImpl implements JdbcExecutor {
   @Override
   public List<Object[]> executeSelectQuery(String sqlTemplate, JdbcParameterBinding<?>[] bindValues, JdbcResultExtractor<?>[] resultExtractors) {
     List<Object[]> results = new ArrayList<>();
+    log.debug("Executing select: {}", sqlTemplate);
 
     try (PreparedStatement preparedStatement = connection.prepareStatement(sqlTemplate)) {
       bindParameters(preparedStatement, bindValues);

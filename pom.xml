@@ -39,6 +39,7 @@
     <byte-buddy.version>1.14.10</byte-buddy.version>
     <HikariCP.version>5.0.1</HikariCP.version>
     <antlr4-runtime.version>4.7.1</antlr4-runtime.version>
+    <commons-collections4.version>4.4</commons-collections4.version>
   </properties>
 
 
@@ -159,6 +160,11 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>${commons-lang3.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+      <version>${commons-collections4.version}</version>
     </dependency>
     <dependency>
       <groupId>com.zaxxer</groupId>

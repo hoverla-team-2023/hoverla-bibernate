@@ -3,15 +3,17 @@ package com.bibernate.hoverla.query;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.bibernate.hoverla.jdbc.JdbcResultExtractor;
-import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
 import com.bibernate.hoverla.metamodel.EntityMapping;
-import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.session.LockMode;
 import com.bibernate.hoverla.session.Session;
 import com.bibernate.hoverla.session.SessionImplementor;
+import com.bibernate.hoverla.session.cache.EntityEntry;
 import com.bibernate.hoverla.session.cache.EntityKey;
+import com.bibernate.hoverla.session.cache.EntityState;
 import com.bibernate.hoverla.utils.EntityUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +50,7 @@ import static com.bibernate.hoverla.utils.EntityUtils.parseWhereStatement;
 @Slf4j
 public class QueryImpl<T> implements Query<T> {
 
-  private final static String SELECT_TEMPLATE = "SELECT %s FROM %s %s";
+  private final static String SELECT_TEMPLATE = "SELECT %s FROM %s %s;";
   private final String queryExpression;
   private final Map<String, Object> parameters;
   private final Class<T> resultType;
@@ -100,10 +102,10 @@ public class QueryImpl<T> implements Query<T> {
 
   public SqlJdbcStatement generateSqlJdbcStatement() {
     log.debug("Generating SQL statement for query: {}, entityClass: {}", queryExpression, resultType);
-    var entityMapping = getEntityMapping();
+    var entityMapping = session.getEntityMapping(resultType);
 
-    var columnNames = getColumnNames(entityMapping);
-    var jdbcResultExtractors = getJdbcTypes(entityMapping);
+    var columnNames = EntityUtils.getColumnNames(entityMapping);
+    var jdbcResultExtractors = EntityUtils.getJdbcTypes(entityMapping);
     var tableName = entityMapping.getTableName();
 
     var abstractSyntaxTree = parseWhereStatement(queryExpression);
@@ -120,43 +122,37 @@ public class QueryImpl<T> implements Query<T> {
   }
 
   /**
-   * Retrieves the JDBC types from the entity mapping.
-   *
-   * @param entityMapping The entity mapping for the entity.
-   *
-   * @return A list of JDBC types.
-   */
-  private List<? extends BibernateJdbcType<?>> getJdbcTypes(EntityMapping entityMapping) {
-    return entityMapping.getFieldMappingMap()
-      .values()
-      .stream()
-      .map(FieldMapping::getJdbcType)
-      .collect(Collectors.toList());
-  }
-
-  private String getColumnNames(EntityMapping entityMapping) {
-    return entityMapping.getFieldMappingMap().values()
-      .stream()
-      .map(FieldMapping::getColumnName)
-      .collect(Collectors.joining(", "));
-  }
-
-  /**
    * Maps a row of query results to an entity.
    *
    * @param row The row of query results.
    *
    * @return The entity created from the row of results.
    */
-  @SuppressWarnings("unchecked")
   private T mapRowToEntity(Object[] row) {
     EntityMapping entityMapping = getEntityMapping();
     T entity = createEntityFromRow(row, entityMapping);
     EntityKey entityKey = getEntityKey(resultType, entity, entityMapping.getPrimaryKeyMapping().getFieldName());
 
-    return (T) session
-      .getPersistenceContext()
-      .putEntityIfAbsent(entityKey, entity);
+    return Optional.ofNullable(session.getPersistenceContext()
+                                 .compute(entityKey,
+                                          (key, existingEntry) -> getOrLoad(existingEntry, entity)))
+      .map(EntityEntry::getEntity)
+      .map(resultType::cast)
+      .orElse(null);
+  }
+
+  private EntityEntry getOrLoad(EntityEntry existingEntry, T entity) {
+    if (existingEntry != null) {
+      return existingEntry;
+    }
+
+    return EntityEntry.builder()
+      .entityState(EntityState.MANAGED)
+      .entity(entity)
+      .loadedEntity(null) // make a snapshot
+      .lockMode(LockMode.NONE)
+      .isReadOnly(false)
+      .build();
   }
 
   private EntityMapping getEntityMapping() {

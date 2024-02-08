@@ -1,6 +1,7 @@
 package com.bibernate.hoverla.session;
 
 import java.sql.Connection;
+import java.util.Optional;
 
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -55,7 +56,14 @@ public class SessionImpl implements Session, SessionImplementor {
 
   @Override
   public <T> T find(Class<T> entityClass, Object id) {
-    throw new NotImplementedException();
+    ensureEntityClassIsRegistered(entityClass);
+
+    EntityKey entityKey = new EntityKey(entityClass, id);
+
+    return Optional.ofNullable(persistenceContext.compute(entityKey, this::getOrLoad))
+      .map(EntityEntry::getEntity)
+      .map(entityClass::cast)
+      .orElse(null);
   }
 
   @Override
@@ -117,6 +125,20 @@ public class SessionImpl implements Session, SessionImplementor {
     if (currentConnection != null) {
       currentConnection.close();
     }
+  }
+
+  private EntityEntry getOrLoad(EntityKey entityKey, EntityEntry existingEntry) {
+    if (existingEntry != null) {
+      return existingEntry;
+    }
+    return Optional.ofNullable(entityDaoService.load(entityKey))
+      .map(entity -> EntityEntry.builder()
+        .lockMode(LockMode.NONE)
+        .entity(entity)
+        .entityState(EntityState.MANAGED)
+        .loadedEntity(null)//todo
+        .build())
+      .orElse(null);
   }
 
   //todo think about abstract class where to put this method
