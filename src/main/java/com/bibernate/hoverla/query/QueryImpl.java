@@ -8,18 +8,15 @@ import java.util.stream.Collectors;
 
 import com.bibernate.hoverla.jdbc.JdbcResultExtractor;
 import com.bibernate.hoverla.metamodel.EntityMapping;
-import com.bibernate.hoverla.session.LockMode;
 import com.bibernate.hoverla.session.Session;
 import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.cache.EntityEntry;
 import com.bibernate.hoverla.session.cache.EntityKey;
-import com.bibernate.hoverla.session.cache.EntityState;
 import com.bibernate.hoverla.utils.EntityUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
 import static com.bibernate.hoverla.utils.EntityUtils.getEntityKey;
-import static com.bibernate.hoverla.utils.EntityUtils.getSnapshot;
 import static com.bibernate.hoverla.utils.EntityUtils.parseWhereStatement;
 
 /**
@@ -131,42 +128,17 @@ public class QueryImpl<T> implements Query<T> {
    */
   private T mapRowToEntity(Object[] row) {
     EntityMapping entityMapping = getEntityMapping();
-    T entity = createEntityFromRow(row, entityMapping);
-    EntityKey entityKey = getEntityKey(resultType, entity, entityMapping.getPrimaryKeyMapping().getFieldName());
+    T entity = session.getEntityRowMapper().createEntityFromRow(row, resultType);
+    EntityKey<T> entityKey = getEntityKey(resultType, entity, entityMapping.getPrimaryKeyMapping().getFieldName());
 
-    return Optional.ofNullable(session.getPersistenceContext()
-                                 .compute(entityKey,
-                                          (key, existingEntry) -> getOrLoad(existingEntry, entity, entityMapping)))
+    return Optional.ofNullable((session.getPersistenceContext().manageEntity(entityKey, () -> entity, entityEntry -> {})))
       .map(EntityEntry::getEntity)
       .map(resultType::cast)
       .orElse(null);
   }
 
-  private EntityEntry getOrLoad(EntityEntry existingEntry, T entity, EntityMapping entityMapping) {
-    if (existingEntry != null) {
-      return existingEntry;
-    }
-
-    return EntityEntry.builder()
-      .entityState(EntityState.MANAGED)
-      .entity(entity)
-      .snapshot(getSnapshot(entityMapping, entity)) // make a snapshot
-      .lockMode(LockMode.NONE)
-      .isReadOnly(false)
-      .build();
-  }
-
   private EntityMapping getEntityMapping() {
     return session.getEntityMapping(resultType);
-  }
-
-  private T createEntityFromRow(Object[] row, EntityMapping entityMapping) {
-    T entity = EntityUtils.newInstanceOf(resultType);
-    int i = 0;
-    for (var value : entityMapping.getFieldMappingMap().values()) {
-      EntityUtils.setFieldValue(value.getFieldName(), entity, row[i++]);
-    }
-    return entity;
   }
 
 }

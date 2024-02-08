@@ -103,12 +103,12 @@ public class EntityUtils {
    *
    * @throws BibernateException If an error occurs while attempting to retrieve the entity key.
    */
-  public static EntityKey getEntityKey(Class<?> entityClass, Object entity, String primaryKeyFieldName) {
+  public static <T> EntityKey<T> getEntityKey(Class<T> entityClass, T entity, String primaryKeyFieldName) {
     try {
       Field declaredField = entityClass.getDeclaredField(primaryKeyFieldName);
       declaredField.setAccessible(true);
       Object object = declaredField.get(entity);
-      return new EntityKey(entityClass, object);
+      return new EntityKey<>(entityClass, object);
     } catch (IllegalAccessException | NoSuchFieldException exc) {
       throw new BibernateException("Failed to get entity key for: " + entityClass, exc);
     }
@@ -152,27 +152,6 @@ public class EntityUtils {
       .collect(Collectors.toList());
   }
 
-  /**
-   * Converts the given <code>entity</code> into a map of field name and field value. Only {@link FieldMapping#isUpdatable() updatable} fields are included
-   * in the result map.
-   *
-   * @param entityMapping entity mapping
-   * @param entity        entity to convert
-   *
-   * @return map with field names and their values
-   */
-  public static Map<String, Object> getSnapshot(EntityMapping entityMapping, Object entity) {
-    Class<?> entityType = entityMapping.getEntityClass();
 
-    return Arrays.stream(entityType.getDeclaredFields())
-      .filter(field -> isUpdatableField(entityMapping, field))
-      .collect(toMap(Field::getName, field -> getFieldValue(field, entity)));
-  }
-
-  private static boolean isUpdatableField(EntityMapping entityMapping, Field field) {
-    return Optional.ofNullable(entityMapping.getFieldMapping(field.getName()))
-      .map(FieldMapping::isUpdatable)
-      .orElse(false);
-  }
 
 }

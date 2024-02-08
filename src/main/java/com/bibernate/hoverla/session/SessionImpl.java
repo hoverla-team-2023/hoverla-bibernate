@@ -27,7 +27,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.bibernate.hoverla.utils.EntityUtils.getSnapshot;
+import static com.bibernate.hoverla.utils.EntityProxyUtils.getProxyInterceptor;
 
 @Slf4j
 public class SessionImpl implements Session, SessionImplementor {
@@ -48,6 +48,9 @@ public class SessionImpl implements Session, SessionImplementor {
   private final JdbcExecutor jdbcExecutor;
 
   @Getter
+  private final EntityRowMapper entityRowMapper;
+
+  @Getter
   private Connection currentConnection;
 
   @SneakyThrows //todo use properly connection
@@ -58,15 +61,18 @@ public class SessionImpl implements Session, SessionImplementor {
     this.actionQueue = new ActionQueue();
     this.currentConnection = sessionFactoryImplementor.getDataSource().getConnection();
     this.jdbcExecutor = new JdbcExecutorImpl(currentConnection);
+    this.entityRowMapper = new EntityRowMapper(this);
   }
 
   @Override
   public <T> T find(Class<T> entityClass, Object id) {
     ensureEntityClassIsRegistered(entityClass);
 
-    EntityKey entityKey = new EntityKey(entityClass, id);
+    EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
+    log.info("Finding entity with entity key: {}", entityKey);
 
-    return Optional.ofNullable(persistenceContext.compute(entityKey, this::getOrLoad))
+    return Optional.ofNullable(persistenceContext.manageEntity(entityKey, () -> entityDaoService.load(entityKey),
+                                                               entityEntry -> {}))
       .map(EntityEntry::getEntity)
       .map(entityClass::cast)
       .orElse(null);
@@ -87,7 +93,13 @@ public class SessionImpl implements Session, SessionImplementor {
   @Override
   public <T> T getReference(Class<T> entityClass, Object id) {
     getEntityMapping(entityClass);
-    return EntityProxyUtils.createProxy(this, entityClass, id);
+    EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
+
+    return Optional.ofNullable(persistenceContext.manageEntity(entityKey, () -> EntityProxyUtils.createProxy(this, entityKey),
+                                                               entityEntry -> {}))
+      .map(EntityEntry::getEntity)
+      .map(entityClass::cast)
+      .orElse(null);
   }
 
   @Override
@@ -128,39 +140,22 @@ public class SessionImpl implements Session, SessionImplementor {
   @Override
   @SneakyThrows
   public void close() {
-    flush();
     //todo implement it properly
     if (currentConnection != null) {
       currentConnection.close();
     }
   }
 
-  private EntityEntry getOrLoad(EntityKey entityKey, EntityEntry existingEntry) {
-    if (existingEntry != null) {
-      return existingEntry;
-    }
-
-    var entityMapping = getEntityMapping(entityKey.entityType());
-    return Optional.ofNullable(entityDaoService.load(entityKey))
-      .map(entity -> EntityEntry.builder()
-        .lockMode(LockMode.NONE)
-        .entity(entity)
-        .entityState(EntityState.MANAGED)
-        .snapshot(getSnapshot(entityMapping, entity))
-        .build())
-      .orElse(null);
-  }
-
   //todo think about abstract class where to put this method
   @Override
   public <T> EntityDetails getEntityDetails(T entity) {
-    BibernateByteBuddyProxyInterceptor proxyInterceptor = EntityProxyUtils.getProxyInterceptor(entity);
+    BibernateByteBuddyProxyInterceptor<T> proxyInterceptor = getProxyInterceptor(entity);
     boolean isProxy = proxyInterceptor != null;
     Class<?> entityClass = isProxy ? proxyInterceptor.getEntityClass() : entity.getClass();
     EntityMapping entityMapping = getEntityMapping(entityClass);
     FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
-    EntityKey entityKey = isProxy ? new EntityKey(proxyInterceptor.getEntityClass(), proxyInterceptor.getEntityId())
-                                  : EntityUtils.getEntityKey(entity.getClass(), entity, primaryKeyMapping.getFieldName());
+    EntityKey<T> entityKey = isProxy ? new EntityKey<>(proxyInterceptor.getEntityClass(), proxyInterceptor.getEntityId())
+                                     : EntityUtils.getEntityKey((Class<T>) entity.getClass(), entity, primaryKeyMapping.getFieldName());
 
     return new EntityDetails(entityMapping, entityKey, isProxy);
   }

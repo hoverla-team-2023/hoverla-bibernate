@@ -97,7 +97,7 @@ public class EntityDaoService {
 
   }
 
-  public Object load(EntityKey entityKey) {
+  public <T> T load(EntityKey<T> entityKey) {
 
     EntityMapping entityMapping = sessionImplementor.getEntityMapping(entityKey.entityType());
 
@@ -116,7 +116,11 @@ public class EntityDaoService {
                                                                                   bindValues,
                                                                                   jdbcResultExtractors.toArray(new JdbcResultExtractor<?>[0]));
 
-    List<Object> results = rows.stream().map(row -> createEntityFromRow(row, entityMapping)).toList();
+    List<T> results = rows.stream()
+      .map(row -> sessionImplementor
+        .getEntityRowMapper()
+        .createEntityFromRow(row, entityKey.entityType()))
+      .toList();
 
     if (results.size() > 1) {
       String errorMessage = "Multiple entities found for the given entity key : %s. Expected only one result.".formatted(entityKey);

@@ -24,6 +24,7 @@ import lombok.ToString;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -128,7 +129,7 @@ class QueryLanguageITest {
   }
 
   @Test
-  void test() {
+  void testBibernateBqlMissingParameterExceptionThrown() {
     MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
     Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class);
     SessionFactoryImpl sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
@@ -141,10 +142,29 @@ class QueryLanguageITest {
     }
   }
 
+  @Test
+  void testTheReferenceIsTheSame() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class);
+    SessionFactoryImpl sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    try (Session session = sessionFactory.openSession()) {
+      List<TestEntity> result = session.createQuery(
+          "WHERE id = :id",
+          TestEntity.class)
+        .setParameter("id", 1L)
+        .getResult();
+
+      assertNotNull(result);
+      assertSame(result.getFirst(), session.getReference(TestEntity.class, 1L));
+      assertSame(result.getFirst(), session.find(TestEntity.class, 1L));
+    }
+  }
+
   @Entity
-  @NoArgsConstructor
-  @ToString
   @Getter
+  @ToString
+  @NoArgsConstructor
   public static class TestEntity {
 
     @Id
@@ -156,14 +176,43 @@ class QueryLanguageITest {
     @Column(nullable = false, unique = true)
     private String email;
 
-    // Adding a constructor to easily create a new TestEntity
-    public TestEntity(Long id, String firstName, String lastName, String email) {
-      this.id = id;
-      this.firstName = firstName;
-      this.lastName = lastName;
-      this.email = email;
-    }
+  }
 
+  @Test
+  void testTheReferenceIsTheSameIfFindAndThanQuery() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class);
+    SessionFactoryImpl sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    try (Session session = sessionFactory.openSession()) {
+      TestEntity entityByFind = session.find(TestEntity.class, 1L);
+      TestEntity entityByQuery = session.createQuery(
+          "WHERE id = :id",
+          TestEntity.class)
+        .setParameter("id", 1L)
+        .getResult().stream().findFirst().orElseThrow();
+
+      assertSame(entityByFind, entityByQuery);
+    }
+  }
+
+  @Test
+  void testTheReferenceIsTheSameIfGetReferenceAndThanQuery() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class);
+    SessionFactoryImpl sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    try (Session session = sessionFactory.openSession()) {
+      TestEntity entityByFind = session.getReference(TestEntity.class, 1L);
+      assertEquals(1L, entityByFind.getId());
+      TestEntity entityByQuery = session.createQuery(
+          "WHERE id = :id",
+          TestEntity.class)
+        .setParameter("id", 1L)
+        .getResult().stream().findFirst().orElseThrow();
+
+      assertSame(entityByFind, entityByQuery);
+    }
   }
 
 }

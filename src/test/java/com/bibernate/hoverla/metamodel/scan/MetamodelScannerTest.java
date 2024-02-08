@@ -17,7 +17,6 @@ import com.bibernate.hoverla.annotations.JdbcType;
 import com.bibernate.hoverla.annotations.Table;
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
 import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
-import com.bibernate.hoverla.jdbc.types.DefaultBibernateJdbcTypeImpl;
 import com.bibernate.hoverla.jdbc.types.PostgreSqlJdbcEnumType;
 import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProvider;
 import com.bibernate.hoverla.metamodel.EntityMapping;
@@ -94,7 +93,6 @@ class MetamodelScannerTest {
   void scanEntityWithJdbcType(@Mock BibernateJdbcType<?> jdbcType) {
     Class enumJdbcType = PostgreSqlJdbcEnumType.class;
     Class testEnumClass = TestEntityWithJdbcType.TestEnum.class;
-
 
     when(
       jdbcTypeProvider.getInstance(

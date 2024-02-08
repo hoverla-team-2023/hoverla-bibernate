@@ -8,8 +8,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.bibernate.hoverla.exceptions.BibernateException;
 import com.bibernate.hoverla.exceptions.LazyLoadingException;
-import com.bibernate.hoverla.session.Session;
-import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
+import com.bibernate.hoverla.metamodel.EntityMapping;
+import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.session.SessionImplementor;
+import com.bibernate.hoverla.session.cache.EntityKey;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,22 +23,28 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class EntityProxyUtilsTest {
 
   @Mock
-  private Session session;
+  private SessionImplementor session;
 
   @Test
   public void whenCreateProxy_thenCheckTheProxyIsNotNull() {
-    User proxy = EntityProxyUtils.createProxy(session, User.class, 1L);
+    mockEntityMapping();
+
+    User proxy = EntityProxyUtils.createProxy(session, new EntityKey<>(User.class, 1L));
     assertNotNull(proxy);
   }
 
   @Test
   public void whenIsProxy_thenAssert() {
-    User proxy = EntityProxyUtils.createProxy(session, User.class, 1L);
+    mockEntityMapping();
+
+    User proxy = EntityProxyUtils.createProxy(session, new EntityKey<>(User.class, 1L));
 
     assertTrue(EntityProxyUtils.isProxy(proxy));
     assertFalse(EntityProxyUtils.isProxy(User.builder().id(5L).name("Test").comment("Comment").build()));
@@ -44,13 +52,19 @@ class EntityProxyUtilsTest {
 
   @Test
   public void whenCreateProxyForFinalClass_thenThrownException() {
-    Assertions.assertThrowsExactly(BibernateException.class, () -> EntityProxyUtils.createProxy(session, Person.class, 1L));
+    EntityMapping entityMapping = mock(EntityMapping.class);
+    doReturn(entityMapping).when(session).getEntityMapping(Person.class);
+    doReturn(FieldMapping.builder().fieldName("id").build()).when(entityMapping).getPrimaryKeyMapping();
+
+    Assertions.assertThrowsExactly(BibernateException.class, () -> EntityProxyUtils.createProxy(session, new EntityKey<>(Person.class, 1L)));
   }
 
   @Test
   public void whenGetInterceptor_thenVerityInterceptor() {
-    User proxy = EntityProxyUtils.createProxy(session, User.class, 155L);
-    BibernateByteBuddyProxyInterceptor interceptor = EntityProxyUtils.getProxyInterceptor(proxy);
+    mockEntityMapping();
+
+    User proxy = EntityProxyUtils.createProxy(session, new EntityKey<>(User.class, 155L));
+    var interceptor = EntityProxyUtils.getProxyInterceptor(proxy);
 
     assertNotNull(interceptor);
     assertEquals(155L, interceptor.getEntityId());
@@ -61,12 +75,21 @@ class EntityProxyUtilsTest {
 
   @Test
   public void whenUnlinkSession_thenLazyLoadingExceptionThrown() {
-    User proxy = EntityProxyUtils.createProxy(session, User.class, 155L);
-    BibernateByteBuddyProxyInterceptor interceptor = EntityProxyUtils.getProxyInterceptor(proxy);
+
+    mockEntityMapping();
+
+    User proxy = EntityProxyUtils.createProxy(session, new EntityKey<>(User.class, 155L));
+    var interceptor = EntityProxyUtils.getProxyInterceptor(proxy);
 
     assertNotNull(interceptor);
     interceptor.unlinkSession();
     Assertions.assertThrowsExactly(LazyLoadingException.class, proxy::getComment);
+  }
+
+  private void mockEntityMapping() {
+    EntityMapping entityMapping = mock(EntityMapping.class);
+    doReturn(entityMapping).when(session).getEntityMapping(User.class);
+    doReturn(FieldMapping.builder().fieldName("id").build()).when(entityMapping).getPrimaryKeyMapping();
   }
 
   @Data

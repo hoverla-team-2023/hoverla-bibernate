@@ -3,7 +3,8 @@ package com.bibernate.hoverla.utils;
 import java.lang.reflect.Field;
 
 import com.bibernate.hoverla.exceptions.BibernateException;
-import com.bibernate.hoverla.session.Session;
+import com.bibernate.hoverla.session.SessionImplementor;
+import com.bibernate.hoverla.session.cache.EntityKey;
 import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
 
 import net.bytebuddy.ByteBuddy;
@@ -22,18 +23,18 @@ public class EntityProxyUtils {
   /**
    * Creates a proxy object of the given entity type with the provided session and entity ID.
    *
-   * @param session    The session object to use for lazy loading.
-   * @param entityType The entity type of the proxy object.
-   * @param entityId   The ID of the entity.
-   * @param <T>        The generic type of the entity.
+   * @param session   The session object to use for lazy loading.
+   * @param entityKey The entity key of request proxy object.
+   * @param <T>       The generic type of the entity.
    *
    * @return The proxy object of the entity type.
    *
    * @throws BibernateException if the proxy creation fails.
    */
-
-  public static <T> T createProxy(Session session, Class<T> entityType, Object entityId) {
-    BibernateByteBuddyProxyInterceptor interceptor = new BibernateByteBuddyProxyInterceptor(session, entityType, entityId);
+  public static <T> T createProxy(SessionImplementor session, EntityKey<T> entityKey) {
+    Class<T> entityType = entityKey.entityType();
+    Object entityId = entityKey.id();
+    var interceptor = new BibernateByteBuddyProxyInterceptor<>(session, entityType, entityId);
 
     try (DynamicType.Unloaded<T> dynamicType = new ByteBuddy()
       .subclass(entityType)
@@ -73,6 +74,11 @@ public class EntityProxyUtils {
     return getProxyInterceptor(object) != null;
   }
 
+  public static boolean isUnitializedProxy(Object object) {
+    BibernateByteBuddyProxyInterceptor<Object> proxyInterceptor = getProxyInterceptor(object);
+    return proxyInterceptor != null && proxyInterceptor.getLoadedEntity() == null;
+  }
+
   /**
    * Retrieves the interceptor object associated with the given proxy object.
    *
@@ -81,14 +87,32 @@ public class EntityProxyUtils {
    * @return The BibernateByteBuddyProxyInterceptor object associated with the proxy object, or null if not found.
    */
 
-  public static BibernateByteBuddyProxyInterceptor getProxyInterceptor(Object proxy) {
+  public static <T> BibernateByteBuddyProxyInterceptor<T> getProxyInterceptor(Object proxy) {
     try {
       Field field = proxy.getClass().getDeclaredField(INTERCEPTOR_FIELD_NAME);
       field.setAccessible(true);
-      return (BibernateByteBuddyProxyInterceptor) field.get(proxy);
+      return (BibernateByteBuddyProxyInterceptor<T>) field.get(proxy);
     } catch (NoSuchFieldException | IllegalAccessException e) {
       return null;
     }
+  }
+
+  public static <T> void initializeProxy(T proxy, T entity) {
+    var proxyInterceptor = EntityProxyUtils.getProxyInterceptor(proxy);
+    if (proxyInterceptor == null) {
+      return;
+    }
+
+    proxyInterceptor.initializyIfEmpty(entity);
+  }
+
+  public static <T> T unProxy(T proxy) {
+    var proxyInterceptor = EntityProxyUtils.getProxyInterceptor(proxy);
+    if (proxyInterceptor == null) {
+      return proxy;
+    }
+
+    return (T) proxyInterceptor.getLoadedEntity();
   }
 
 }

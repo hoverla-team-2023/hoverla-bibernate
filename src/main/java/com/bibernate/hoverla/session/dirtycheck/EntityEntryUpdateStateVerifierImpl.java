@@ -1,24 +1,30 @@
 package com.bibernate.hoverla.session.dirtycheck;
 
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.logging.log4j.core.util.ReflectionUtil;
 
 import com.bibernate.hoverla.exceptions.IllegalFieldAccessException;
+import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
 import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.cache.EntityEntry;
 import com.bibernate.hoverla.session.cache.EntityKey;
 import com.bibernate.hoverla.session.cache.EntityState;
+import com.bibernate.hoverla.utils.EntityProxyUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toMap;
 
-import static com.bibernate.hoverla.utils.EntityUtils.getSnapshot;
-
+//todo Yevhenii Savonenko: rename it to DirtyCheckServiceImpl
 @Slf4j
 @RequiredArgsConstructor
 public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStateVerifier {
@@ -26,7 +32,7 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
   private final SessionImplementor sessionImplementor;
 
   @Override
-  public Object[] findDirtyEntities(Map<EntityKey, EntityEntry> persistenceContextMap) {
+  public Object[] findDirtyEntities(Map<EntityKey<?>, EntityEntry> persistenceContextMap) {
     return persistenceContextMap.entrySet().stream()
       .filter(this::isManaged)
       .filter(not(this::isReadOnly))
@@ -52,11 +58,11 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
       .toArray(DirtyFieldMapping[]::new);
   }
 
-  private boolean isManaged(Map.Entry<EntityKey, EntityEntry> entry) {
+  private boolean isManaged(Map.Entry<EntityKey<?>, EntityEntry> entry) {
     return entry.getValue().getEntityState().equals(EntityState.MANAGED);
   }
 
-  private boolean isReadOnly(Map.Entry<EntityKey, EntityEntry> entry) {
+  private boolean isReadOnly(Map.Entry<EntityKey<?>, EntityEntry> entry) {
     return entry.getValue().isReadOnly();
   }
 
@@ -110,6 +116,36 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
     } catch (IllegalAccessException exception) {
       throw new IllegalFieldAccessException("Failed to access field: %s for entity: %s".formatted(fieldName, entityType), exception);
     }
+  }
+
+
+  /**
+   * Converts the given <code>entity</code> into a map of field name and field value. Only {@link FieldMapping#isUpdatable() updatable} fields are included
+   * in the result map.
+   *
+   * @param entityMapping entity mapping
+   * @param entity        entity to convert
+   *
+   * @return map with field names and their values
+   */
+  //TODO return Object[]
+  public Map<String, Object> getSnapshot(EntityMapping entityMapping, Object entity) {
+    Object object = EntityProxyUtils.unProxy(entity);
+    if (object == null) {
+      return null;
+    }
+
+    Class<?> entityType = entityMapping.getEntityClass();
+
+    return Arrays.stream(entityType.getDeclaredFields())
+      .filter(field -> isUpdatableField(entityMapping, field))
+      .collect(toMap(Field::getName, field -> ReflectionUtil.getFieldValue(field, object)));
+  }
+
+  private boolean isUpdatableField(EntityMapping entityMapping, Field field) {
+    return Optional.ofNullable(entityMapping.getFieldMapping(field.getName()))
+      .map(FieldMapping::isUpdatable)
+      .orElse(false);
   }
 
 }

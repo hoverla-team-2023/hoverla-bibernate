@@ -51,8 +51,12 @@ public interface SessionImplementor extends Session {
    */
   EntityDaoService getEntityDaoService();
 
+
+  EntityRowMapper getEntityRowMapper();
+
   <T> EntityMapping getEntityMapping(Class<T> entity);
 
   <T> EntityDetails getEntityDetails(T entity);
+
 
 }
