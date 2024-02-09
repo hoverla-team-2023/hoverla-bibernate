@@ -50,4 +50,8 @@ public class EntityMapping {
     fieldMappingMap.put(fieldName, fieldMapping);
   }
 
+  public FieldMapping<?> getFieldMapping(String fieldName) {
+    return fieldMappingMap.get(fieldName);
+  }
+
 }

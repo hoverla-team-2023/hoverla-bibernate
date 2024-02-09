@@ -19,6 +19,7 @@ import com.bibernate.hoverla.utils.EntityUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import static com.bibernate.hoverla.utils.EntityUtils.getEntityKey;
+import static com.bibernate.hoverla.utils.EntityUtils.getSnapshot;
 import static com.bibernate.hoverla.utils.EntityUtils.parseWhereStatement;
 
 /**
@@ -135,13 +136,13 @@ public class QueryImpl<T> implements Query<T> {
 
     return Optional.ofNullable(session.getPersistenceContext()
                                  .compute(entityKey,
-                                          (key, existingEntry) -> getOrLoad(existingEntry, entity)))
+                                          (key, existingEntry) -> getOrLoad(existingEntry, entity, entityMapping)))
       .map(EntityEntry::getEntity)
       .map(resultType::cast)
       .orElse(null);
   }
 
-  private EntityEntry getOrLoad(EntityEntry existingEntry, T entity) {
+  private EntityEntry getOrLoad(EntityEntry existingEntry, T entity, EntityMapping entityMapping) {
     if (existingEntry != null) {
       return existingEntry;
     }
@@ -149,7 +150,7 @@ public class QueryImpl<T> implements Query<T> {
     return EntityEntry.builder()
       .entityState(EntityState.MANAGED)
       .entity(entity)
-      .loadedEntity(null) // make a snapshot
+      .snapshot(getSnapshot(entityMapping, entity)) // make a snapshot
       .lockMode(LockMode.NONE)
       .isReadOnly(false)
       .build();

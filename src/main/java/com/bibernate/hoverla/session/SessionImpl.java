@@ -7,6 +7,7 @@ import org.apache.commons.lang3.NotImplementedException;
 
 import com.bibernate.hoverla.action.ActionQueue;
 import com.bibernate.hoverla.action.DeleteAction;
+import com.bibernate.hoverla.action.UpdateAction;
 import com.bibernate.hoverla.exceptions.BibernateException;
 import com.bibernate.hoverla.jdbc.JdbcExecutor;
 import com.bibernate.hoverla.jdbc.JdbcExecutorImpl;
@@ -17,13 +18,18 @@ import com.bibernate.hoverla.query.QueryImpl;
 import com.bibernate.hoverla.session.cache.EntityEntry;
 import com.bibernate.hoverla.session.cache.EntityKey;
 import com.bibernate.hoverla.session.cache.EntityState;
+import com.bibernate.hoverla.session.dirtycheck.EntityEntryUpdateStateVerifierImpl;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
 import com.bibernate.hoverla.utils.EntityUtils;
 import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
+import static com.bibernate.hoverla.utils.EntityUtils.getSnapshot;
+
+@Slf4j
 public class SessionImpl implements Session, SessionImplementor {
 
   @Getter
@@ -46,7 +52,7 @@ public class SessionImpl implements Session, SessionImplementor {
 
   @SneakyThrows //todo use properly connection
   public SessionImpl(SessionFactoryImplementor sessionFactoryImplementor) {
-    this.persistenceContext = new PersistenceContext();
+    this.persistenceContext = new PersistenceContext(this, new EntityEntryUpdateStateVerifierImpl(this));
     this.sessionFactory = sessionFactoryImplementor;
     this.entityDaoService = new EntityDaoService(this);
     this.actionQueue = new ActionQueue();
@@ -115,12 +121,14 @@ public class SessionImpl implements Session, SessionImplementor {
 
   @Override
   public void flush() {
+    updateEntitiesIfDirty();
     actionQueue.executeActions();
   }
 
   @Override
   @SneakyThrows
   public void close() {
+    flush();
     //todo implement it properly
     if (currentConnection != null) {
       currentConnection.close();
@@ -131,12 +139,14 @@ public class SessionImpl implements Session, SessionImplementor {
     if (existingEntry != null) {
       return existingEntry;
     }
+
+    var entityMapping = getEntityMapping(entityKey.entityType());
     return Optional.ofNullable(entityDaoService.load(entityKey))
       .map(entity -> EntityEntry.builder()
         .lockMode(LockMode.NONE)
         .entity(entity)
         .entityState(EntityState.MANAGED)
-        .loadedEntity(null)//todo
+        .snapshot(getSnapshot(entityMapping, entity))
         .build())
       .orElse(null);
   }
@@ -202,6 +212,14 @@ public class SessionImpl implements Session, SessionImplementor {
    */
   private <T> boolean validateEntityClass(Class<T> entityClass) {
     return !sessionFactory.getMetamodel().getEntityMappingMap().containsKey(entityClass);
+  }
+
+  private void updateEntitiesIfDirty() {
+    Object[] dirtyEntities = persistenceContext.getUpdatedEntities();
+    for (Object entity : dirtyEntities) {
+      log.debug("Updating the dirty entity: {}", getEntityDetails(entity).entityKey());
+      actionQueue.addAction(new UpdateAction(entity, entityDaoService));
+    }
   }
 
 }
