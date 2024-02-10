@@ -5,16 +5,18 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
+
 /**
- * Helper annotation to explicitly specify {@link com.bibernate.hoverla.jdbc.types.JdbcType JDBC type} for column mapping
+ * Helper annotation to explicitly specify {@link BibernateJdbcType JDBC type} for column mapping
  */
 @Target({ ElementType.FIELD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JdbcType {
 
   /**
-   * Class name of {@link com.bibernate.hoverla.jdbc.types.JdbcType} implementation to use for column mapping
+   * Class name of {@link BibernateJdbcType} implementation to use for column mapping
    */
-  Class<? extends com.bibernate.hoverla.jdbc.types.JdbcType> value();
+  Class<? extends BibernateJdbcType> value();
 
 }

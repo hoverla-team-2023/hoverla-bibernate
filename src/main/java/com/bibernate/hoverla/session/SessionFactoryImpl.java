@@ -7,21 +7,29 @@ import javax.sql.DataSource;
 import com.bibernate.hoverla.metamodel.Metamodel;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public class SessionFactoryImpl implements SessionFactory, SessionFactoryImplementor {
 
   //todo remove connection from here use dataSource
   private final Connection connection;
-
   private DataSource dataSource;
   private Metamodel metamodel;
 
+  public SessionFactoryImpl(Connection connection) {
+    this.connection = connection;
+  }
+
+  public SessionFactoryImpl(DataSource dataSource, Metamodel metamodel) {
+    this.dataSource = dataSource;
+    this.metamodel = metamodel;
+    this.connection = null;
+  }
+
   @Override
   public Session openSession() {
-    return new SessionImpl(this);
+    SessionImpl session = new SessionImpl(this);
+    return session;
   }
 
   @Override

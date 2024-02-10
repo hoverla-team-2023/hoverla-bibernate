@@ -19,8 +19,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.jdbc.PostgresSqlTestExtension;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,9 +32,7 @@ class SequenceGeneratorImplTest {
   @RegisterExtension
   static PostgresSqlTestExtension DB = new PostgresSqlTestExtension("sequence/init-sequence-generator-test.sql", "sequence/clear-sequence-generator-test.sql");
 
-  private SequenceGeneratorImpl sequenceGenerator = new SequenceGeneratorImpl("test_seq", 5);
-
-  HikariDataSource dataSource = getHikariDataSource();
+  private final SequenceGeneratorImpl sequenceGenerator = new SequenceGeneratorImpl("test_seq", 5);
 
   /**
    * Inspired by <a href="https://vladmihalcea.com/race-condition/">The race condition test by Vlad Mihalcea</a>
@@ -56,7 +52,7 @@ class SequenceGeneratorImplTest {
         new Thread(() -> {
           awaitOnLatch(startLatch);
 
-          inConnection(dataSource, connection -> {
+          inConnection(DB.getDataSource(), connection -> {
             long next = sequenceGenerator.generateNextFromSequence(connection);
             log.info("Emulation concurrent sequence access from other service, generated value " + next);
           });
@@ -66,7 +62,7 @@ class SequenceGeneratorImplTest {
       } else {
         new Thread(() -> {
           awaitOnLatch(startLatch);
-          inConnection(dataSource, connection -> {
+          inConnection(DB.getDataSource(), connection -> {
             long generatedValue = (long) sequenceGenerator.generateNext(connection);
             generated.add(generatedValue);
             log.info("Generated value: {}", generatedValue);
@@ -94,18 +90,9 @@ class SequenceGeneratorImplTest {
   void whenSequenceDoesNotExist_thenBibernateExceptionIsThrown() {
     SequenceGeneratorImpl sequenceGenerator = new SequenceGeneratorImpl("non_existent_seq", 5);
 
-    inConnection(dataSource, connection -> {
+    inConnection(DB.getDataSource(), connection -> {
       Assertions.assertThrows(BibernateSqlException.class, () -> sequenceGenerator.generateNext(connection));
     });
-  }
-
-  private HikariDataSource getHikariDataSource() {
-    HikariConfig hikariConfig = new HikariConfig();
-    hikariConfig.setJdbcUrl(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getJdbcUrl());
-    hikariConfig.setUsername(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getUsername());
-    hikariConfig.setPassword(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getPassword());
-    hikariConfig.setMaximumPoolSize(10);
-    return new HikariDataSource(hikariConfig);
   }
 
   private void inConnection(DataSource dataSource, Consumer<Connection> consumer) {

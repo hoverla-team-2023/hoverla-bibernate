@@ -13,9 +13,10 @@ import org.reflections.Reflections;
 import com.bibernate.hoverla.annotations.Column;
 import com.bibernate.hoverla.annotations.Entity;
 import com.bibernate.hoverla.annotations.Id;
+import com.bibernate.hoverla.annotations.ManyToOne;
 import com.bibernate.hoverla.annotations.Table;
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
-import com.bibernate.hoverla.jdbc.types.JdbcType;
+import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
 import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProvider;
 import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
@@ -118,6 +119,7 @@ public class MetamodelScanner {
       .isNullable(resolveColumnProperty(field, Column::nullable, true, false))
       .isUnique(resolveColumnProperty(field, Column::unique, false, true))
       .isPrimaryKey(field.isAnnotationPresent(Id.class))
+      .isManyToOne(field.isAnnotationPresent(ManyToOne.class))
       .build();
   }
 
@@ -137,9 +139,9 @@ public class MetamodelScanner {
       .map(columnMapper);
   }
 
-  private <T> JdbcType<T> resolveJdbcType(Field field) {
+  private <T> BibernateJdbcType<? super T> resolveJdbcType(Field field) {
     @SuppressWarnings("unchecked")
-    Class<? extends JdbcType<T>> jdbcTypeClass = (Class<? extends JdbcType<T>>)
+    Class<? extends BibernateJdbcType<T>> jdbcTypeClass = (Class<? extends BibernateJdbcType<T>>)
       Optional.ofNullable(field.getAnnotation(com.bibernate.hoverla.annotations.JdbcType.class))
         .map(com.bibernate.hoverla.annotations.JdbcType::value)
         .orElse(null);

@@ -15,7 +15,7 @@ public class DeleteAction extends EntityAction {
    * @param entity          The entity instance to delete.
    * @param entityDaoService The entity dao service responsible for handling the entity.
    */
-  protected DeleteAction(Object entity, EntityDaoService entityDaoService) {
+  public DeleteAction(Object entity, EntityDaoService entityDaoService) {
     super(entity, entityDaoService);
   }
 

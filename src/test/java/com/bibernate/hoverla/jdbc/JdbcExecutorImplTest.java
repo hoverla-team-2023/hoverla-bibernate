@@ -21,8 +21,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.jdbc.types.PostgreSqlJdbcEnumType;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class JdbcExecutorImplTest {
@@ -30,12 +28,10 @@ public class JdbcExecutorImplTest {
   @RegisterExtension
   static PostgresSqlTestExtension DB = new PostgresSqlTestExtension("jdbc-executor/init-jdbc-executor-test.sql", "jdbc-executor/delete-all.sql");
 
-  HikariDataSource dataSource = getHikariDataSource();
-
   @Test
   @Order(10)
   void whenUpdateWithCustomJdbcType_thenChangesSaved() {
-    inTransaction(dataSource, connection -> {
+    inTransaction(DB.getDataSource(), connection -> {
       JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
       JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
       JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
@@ -48,7 +44,7 @@ public class JdbcExecutorImplTest {
         );
     });
 
-    String result = inTransaction(dataSource, connection -> {
+    String result = inTransaction(DB.getDataSource(), connection -> {
       JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
       List<Object[]> objects = jdbcExecutor
         .executeSelectQuery("SELECT * FROM users",
@@ -68,7 +64,7 @@ public class JdbcExecutorImplTest {
   @Test
   @Order(20)
   void whenInsert_thenReturnGeneratedKeys() {
-    Object generateKey = inTransaction(dataSource, connection -> {
+    Object generateKey = inTransaction(DB.getDataSource(), connection -> {
       return new JdbcExecutorImpl(connection)
         .executeUpdateAndReturnGeneratedKeys("INSERT INTO users (first_name, last_name, role) VALUES (?,?,?)",
                                              new JdbcParameterBinding[] {
@@ -85,7 +81,7 @@ public class JdbcExecutorImplTest {
   @Order(30)
   void whenInsertSqlWithWrongTable_thenBibernateExceptionIsThrown() {
 
-    inTransaction(dataSource, connection -> {
+    inTransaction(DB.getDataSource(), connection -> {
       Assertions.assertThrows(BibernateSqlException.class, () ->
 
         new JdbcExecutorImpl(connection)
@@ -103,7 +99,7 @@ public class JdbcExecutorImplTest {
   @Order(40)
   void whenUpdateWithWrongTable_thenChangesSaved() {
 
-    inTransaction(dataSource, connection -> {
+    inTransaction(DB.getDataSource(), connection -> {
       Assertions.assertThrows(BibernateSqlException.class, () -> {
                                 JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
                                 JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
@@ -118,14 +114,6 @@ public class JdbcExecutorImplTest {
                               }
       );
     });
-  }
-
-  private HikariDataSource getHikariDataSource() {
-    HikariConfig hikariConfig = new HikariConfig();
-    hikariConfig.setJdbcUrl(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getJdbcUrl());
-    hikariConfig.setUsername(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getUsername());
-    hikariConfig.setPassword(PostgresSqlTestExtension.POSTGRES_SQL_CONTAINER.getPassword());
-    return new HikariDataSource(hikariConfig);
   }
 
   private void inTransaction(DataSource dataSource, Consumer<Connection> consumer) {

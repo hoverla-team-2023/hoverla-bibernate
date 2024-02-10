@@ -5,6 +5,7 @@ import java.sql.SQLException;
 
 import com.bibernate.hoverla.action.ActionQueue;
 import com.bibernate.hoverla.jdbc.JdbcExecutor;
+import com.bibernate.hoverla.metamodel.EntityMapping;
 
 /**
  * An internal contract that extends the Session interface with additional methods for internal framework usage.
@@ -53,6 +54,11 @@ public interface SessionImplementor extends Session {
    */
   EntityDaoService getEntityDaoService();
 
+  EntityRowMapper getEntityRowMapper();
+
+  <T> EntityMapping getEntityMapping(Class<T> entity);
+
+  <T> EntityDetails getEntityDetails(T entity);
   //todo implement clear session caches
   void invalidateCaches();
 

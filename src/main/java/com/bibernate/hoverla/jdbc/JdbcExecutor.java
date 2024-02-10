@@ -6,7 +6,7 @@ import com.bibernate.hoverla.exceptions.BibernateSqlException;
 
 /**
  * The JdbcExecutor interface provides methods for executing SQL queries and updates using JDBC.
- * It allows you to perform various database operations, including select queries, insertions, updates,
+ * It allows to perform various database operations, including select queries, insertions, updates,
  * deletions, and working with generated keys.
  */
 public interface JdbcExecutor {
@@ -20,7 +20,8 @@ public interface JdbcExecutor {
    * @return A list of Object arrays representing the query results.
    * @throws BibernateSqlException If an SQL exception occurs during query execution.
    */
-  List<Object[]> executeSelectQuery(String sqlTemplate, JdbcParameterBinding<?>[] bindValues,
+  List<Object[]> executeSelectQuery(String sqlTemplate,
+                                    JdbcParameterBinding<?>[] bindValues,
                                     JdbcResultExtractor<?>[] resultExtractors);
 
   /**
@@ -32,7 +33,8 @@ public interface JdbcExecutor {
    * @return An Object representing the generated keys, if available, or null otherwise.
    * @throws BibernateSqlException If an SQL exception occurs during query execution.
    */
-  Object executeUpdateAndReturnGeneratedKeys(String sqlTemplate, JdbcParameterBinding<?>[] bindValues);
+  Object executeUpdateAndReturnGeneratedKeys(String sqlTemplate,
+                                             JdbcParameterBinding<?>[] bindValues);
 
   /**
    * Executes an update, insert, or delete query with the given SQL template and parameter bindings
