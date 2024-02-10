@@ -72,6 +72,10 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
     Map<String, Object> oldSnapshot = entityEntry.getSnapshot();
     Map<String, Object> currentSnapshot = getSnapshot(entityMapping, entityEntry.getEntity());
 
+    if (oldSnapshot == null) {
+      return false;
+    }
+
     if (oldSnapshot.size() != currentSnapshot.size()) {
       return true;
     }
@@ -117,7 +121,6 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
       throw new IllegalFieldAccessException("Failed to access field: %s for entity: %s".formatted(fieldName, entityType), exception);
     }
   }
-
 
   /**
    * Converts the given <code>entity</code> into a map of field name and field value. Only {@link FieldMapping#isUpdatable() updatable} fields are included

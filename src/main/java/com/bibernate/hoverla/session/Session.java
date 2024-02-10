@@ -2,6 +2,7 @@ package com.bibernate.hoverla.session;
 
 import com.bibernate.hoverla.exceptions.BibernateBqlException;
 import com.bibernate.hoverla.query.Query;
+import com.bibernate.hoverla.session.transaction.Transaction;
 
 public interface Session extends AutoCloseable {
 
@@ -67,5 +68,7 @@ public interface Session extends AutoCloseable {
   void flush();
 
   void close();
+
+  Transaction getTransaction();
 
 }
