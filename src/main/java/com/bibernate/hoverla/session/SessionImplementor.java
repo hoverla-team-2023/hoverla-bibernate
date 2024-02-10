@@ -1,11 +1,18 @@
 package com.bibernate.hoverla.session;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 
 import com.bibernate.hoverla.action.ActionQueue;
+import com.bibernate.hoverla.exceptions.BibernateException;
 import com.bibernate.hoverla.jdbc.JdbcExecutor;
 import com.bibernate.hoverla.metamodel.EntityMapping;
+import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.session.cache.EntityKey;
+import com.bibernate.hoverla.session.cache.PersistenceContext;
+import com.bibernate.hoverla.utils.EntityUtils;
+import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
+
+import static com.bibernate.hoverla.utils.EntityProxyUtils.getProxyInterceptor;
 
 /**
  * An internal contract that extends the Session interface with additional methods for internal framework usage.
@@ -56,12 +63,37 @@ public interface SessionImplementor extends Session {
 
   EntityRowMapper getEntityRowMapper();
 
-  <T> EntityMapping getEntityMapping(Class<T> entity);
+  default <T> EntityMapping getEntityMapping(Class<T> entityClass) {
+    EntityMapping entityMapping = getSessionFactory()
+      .getMetamodel()
+      .getEntityMappingMap()
+      .get(entityClass);
 
-  <T> EntityDetails getEntityDetails(T entity);
+    if (entityMapping == null) {
+      throw new BibernateException("""
+                                     The specified class %s is not registered as an entity.
+                                     Ensure that the class has been added in configuration and marked as an entity.
+                                     """
+                                     .formatted(entityClass));
+    }
+
+    return entityMapping;
+  }
+
+  default  <T> EntityDetails getEntityDetails(T entity) {
+    BibernateByteBuddyProxyInterceptor<T> proxyInterceptor = getProxyInterceptor(entity);
+    boolean isProxy = proxyInterceptor != null;
+    Class<?> entityClass = isProxy ? proxyInterceptor.getEntityClass() : entity.getClass();
+    EntityMapping entityMapping = getEntityMapping(entityClass);
+    FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
+    EntityKey<T> entityKey = isProxy ? new EntityKey<>(proxyInterceptor.getEntityClass(), proxyInterceptor.getEntityId())
+                                     : EntityUtils.getEntityKey((Class<T>) entity.getClass(), entity, primaryKeyMapping.getFieldName());
+
+    return new EntityDetails(entityMapping, entityKey, isProxy);
+  }
   //todo implement clear session caches
   void invalidateCaches();
 
-  Connection getConnection() throws SQLException;
+  Connection getConnection();
 
 }

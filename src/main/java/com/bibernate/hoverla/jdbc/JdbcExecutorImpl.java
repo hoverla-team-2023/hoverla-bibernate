@@ -1,6 +1,5 @@
 package com.bibernate.hoverla.jdbc;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.bibernate.hoverla.exceptions.BibernateSqlException;
+import com.bibernate.hoverla.session.SessionImplementor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +25,14 @@ public class JdbcExecutorImpl implements JdbcExecutor {
   //TODO: maybe it is better to use some connection provider interface
   // to have only one instance of this executor
   // to manipulate of connection outside
-  private final Connection connection;
+  private final SessionImplementor sessionImplementor;
 
   @Override
   public List<Object[]> executeSelectQuery(String sqlTemplate, JdbcParameterBinding<?>[] bindValues, JdbcResultExtractor<?>[] resultExtractors) {
     List<Object[]> results = new ArrayList<>();
     log.debug("Executing query: {}", sqlTemplate);
 
-    try (PreparedStatement preparedStatement = connection.prepareStatement(sqlTemplate)) {
+    try (PreparedStatement preparedStatement = sessionImplementor.getConnection().prepareStatement(sqlTemplate)) {
       bindParameters(preparedStatement, bindValues);
 
       try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -50,7 +50,7 @@ public class JdbcExecutorImpl implements JdbcExecutor {
 
   @Override
   public Object executeUpdateAndReturnGeneratedKeys(String sqlTemplate, JdbcParameterBinding<?>[] bindValues) {
-    try (PreparedStatement preparedStatement = connection.prepareStatement(sqlTemplate, PreparedStatement.RETURN_GENERATED_KEYS)) {
+    try (PreparedStatement preparedStatement = sessionImplementor.getConnection().prepareStatement(sqlTemplate, PreparedStatement.RETURN_GENERATED_KEYS)) {
       bindParameters(preparedStatement, bindValues);
       preparedStatement.executeUpdate();
       ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
@@ -66,7 +66,7 @@ public class JdbcExecutorImpl implements JdbcExecutor {
   @Override
   public int executeUpdate(String sqlTemplate, JdbcParameterBinding<?>[] bindValues) {
     log.debug("Executing update query: {}", sqlTemplate);
-    try (PreparedStatement preparedStatement = connection.prepareStatement(sqlTemplate)) {
+    try (PreparedStatement preparedStatement = sessionImplementor.getConnection().prepareStatement(sqlTemplate)) {
       bindParameters(preparedStatement, bindValues);
       return preparedStatement.executeUpdate();
     } catch (SQLException sqlException) {

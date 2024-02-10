@@ -4,5 +4,5 @@ import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.session.cache.EntityKey;
 
 public record EntityDetails(EntityMapping entityMapping,
-                            EntityKey entityKey,
+                            EntityKey<?> entityKey,
                             boolean isProxy) {}

@@ -21,6 +21,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.jdbc.types.PostgreSqlJdbcEnumType;
+import com.bibernate.hoverla.session.SessionImplementor;
+
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class JdbcExecutorImplTest {
@@ -32,7 +36,9 @@ public class JdbcExecutorImplTest {
   @Order(10)
   void whenUpdateWithCustomJdbcType_thenChangesSaved() {
     inTransaction(DB.getDataSource(), connection -> {
-      JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
+      SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+      doReturn(connection).when(sessionImplementor).getConnection();
+      JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(sessionImplementor);
       JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
       JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
 
@@ -45,7 +51,9 @@ public class JdbcExecutorImplTest {
     });
 
     String result = inTransaction(DB.getDataSource(), connection -> {
-      JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
+      SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+      doReturn(connection).when(sessionImplementor).getConnection();
+      JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(sessionImplementor);
       List<Object[]> objects = jdbcExecutor
         .executeSelectQuery("SELECT * FROM users",
                             new JdbcParameterBinding[] {},
@@ -65,7 +73,9 @@ public class JdbcExecutorImplTest {
   @Order(20)
   void whenInsert_thenReturnGeneratedKeys() {
     Object generateKey = inTransaction(DB.getDataSource(), connection -> {
-      return new JdbcExecutorImpl(connection)
+      SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+      doReturn(connection).when(sessionImplementor).getConnection();
+      return new JdbcExecutorImpl(sessionImplementor)
         .executeUpdateAndReturnGeneratedKeys("INSERT INTO users (first_name, last_name, role) VALUES (?,?,?)",
                                              new JdbcParameterBinding[] {
                                                new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
@@ -82,9 +92,12 @@ public class JdbcExecutorImplTest {
   void whenInsertSqlWithWrongTable_thenBibernateExceptionIsThrown() {
 
     inTransaction(DB.getDataSource(), connection -> {
+      SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+      doReturn(connection).when(sessionImplementor).getConnection();
+
       Assertions.assertThrows(BibernateSqlException.class, () ->
 
-        new JdbcExecutorImpl(connection)
+        new JdbcExecutorImpl(sessionImplementor)
           .executeUpdateAndReturnGeneratedKeys("INSERT INTO persons (first_name, last_name, role) VALUES (?,?,?)",
                                                new JdbcParameterBinding[] {
                                                  new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
@@ -101,7 +114,9 @@ public class JdbcExecutorImplTest {
 
     inTransaction(DB.getDataSource(), connection -> {
       Assertions.assertThrows(BibernateSqlException.class, () -> {
-                                JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(connection);
+        SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+        doReturn(connection).when(sessionImplementor).getConnection();
+        JdbcExecutorImpl jdbcExecutor =new JdbcExecutorImpl(sessionImplementor);
                                 JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
                                 JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
 

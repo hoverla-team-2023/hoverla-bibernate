@@ -2,12 +2,13 @@ package com.bibernate.hoverla.session.transaction;
 
 import java.sql.SQLException;
 
+import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.exceptions.BibernateTransactionException;
 import com.bibernate.hoverla.session.SessionImplementor;
 
 public class TransactionImpl implements Transaction {
 
-  private SessionImplementor sessionImplementor;
+  private final SessionImplementor sessionImplementor;
 
   private boolean isActive;
 
@@ -23,13 +24,12 @@ public class TransactionImpl implements Transaction {
       }
       this.sessionImplementor.getConnection().setAutoCommit(false);
       this.isActive = true;
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
+    } catch (SQLException exception) {
+      throw new BibernateSqlException("Exception during commit start transaction.", exception);
     }
     return this;
   }
 
-  //
   @Override
   public Transaction commit() {
     try {
@@ -39,8 +39,8 @@ public class TransactionImpl implements Transaction {
       this.sessionImplementor.flush();
       this.sessionImplementor.getConnection().commit();
       this.isActive = false;
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
+    } catch (SQLException exception) {
+      throw new BibernateSqlException("Exception during commit current transaction.", exception);
     }
     return this;
   }
@@ -54,8 +54,8 @@ public class TransactionImpl implements Transaction {
       this.sessionImplementor.invalidateCaches();
       this.sessionImplementor.getConnection().rollback();
       this.isActive = false;
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
+    } catch (SQLException exception) {
+      throw new BibernateSqlException("Exception during rollback current transaction.", exception);
     }
     return this;
   }

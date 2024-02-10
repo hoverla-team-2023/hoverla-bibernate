@@ -1,13 +1,12 @@
-package com.bibernate.hoverla.session;
+package com.bibernate.hoverla.session.cache;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.bibernate.hoverla.session.cache.EntityEntry;
-import com.bibernate.hoverla.session.cache.EntityKey;
-import com.bibernate.hoverla.session.cache.EntityState;
+import com.bibernate.hoverla.session.LockMode;
+import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.dirtycheck.DirtyFieldMapping;
 import com.bibernate.hoverla.session.dirtycheck.EntityEntryUpdateStateVerifier;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
@@ -41,7 +40,9 @@ public class PersistenceContext {
 
     }
 
-    processFunction.accept(entityEntry);
+    if (entityEntry != null) {
+      processFunction.accept(entityEntry);
+    }
 
     return entityEntry;
   }
@@ -54,6 +55,11 @@ public class PersistenceContext {
       .build();
     entityKeyEntityEntryMap.put(entityKey, entityEntry);
     Object entity = getEntityOrProxyFunction.get();
+
+    if (entity == null) {
+      entityKeyEntityEntryMap.remove(entityKey);
+      return null;
+    }
 
     entityEntry.setEntity(entity);
     entityEntry.setSnapshot(entityEntryStateVerifier.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entity));

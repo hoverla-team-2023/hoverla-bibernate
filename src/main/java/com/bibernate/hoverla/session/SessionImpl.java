@@ -1,75 +1,35 @@
 package com.bibernate.hoverla.session;
 
 import java.sql.Connection;
-import java.sql.SQLException;
-
 import java.util.Optional;
 
 import org.apache.commons.lang3.NotImplementedException;
 
-import com.bibernate.hoverla.action.ActionQueue;
 import com.bibernate.hoverla.action.DeleteAction;
 import com.bibernate.hoverla.action.UpdateAction;
 import com.bibernate.hoverla.exceptions.BibernateException;
-import com.bibernate.hoverla.jdbc.JdbcExecutor;
-import com.bibernate.hoverla.jdbc.JdbcExecutorImpl;
-import com.bibernate.hoverla.metamodel.EntityMapping;
-import com.bibernate.hoverla.metamodel.FieldMapping;
 import com.bibernate.hoverla.query.Query;
 import com.bibernate.hoverla.query.QueryImpl;
 import com.bibernate.hoverla.session.cache.EntityEntry;
 import com.bibernate.hoverla.session.cache.EntityKey;
 import com.bibernate.hoverla.session.cache.EntityState;
-import com.bibernate.hoverla.session.dirtycheck.EntityEntryUpdateStateVerifierImpl;
-import com.bibernate.hoverla.utils.EntityProxyUtils;
-import com.bibernate.hoverla.utils.EntityUtils;
-import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
 import com.bibernate.hoverla.session.transaction.Transaction;
 import com.bibernate.hoverla.session.transaction.TransactionImpl;
+import com.bibernate.hoverla.utils.EntityProxyUtils;
 
-import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.bibernate.hoverla.utils.EntityProxyUtils.getProxyInterceptor;
-
 @Slf4j
-public class SessionImpl implements Session, SessionImplementor {
+public class SessionImpl extends AbstractSession implements Session, SessionImplementor {
 
-  @Getter
-  private final SessionFactoryImplementor sessionFactory;
+  private Transaction currentTransaction;
 
-  @Getter
-  private final PersistenceContext persistenceContext;
-
-  @Getter
-  private final ActionQueue actionQueue;
-
-  @Getter
-  private final EntityDaoService entityDaoService;
-
-  @Getter
-  private final JdbcExecutor jdbcExecutor;
-
-  private Transaction сurrentTransaction;
   private boolean isClosed = true;
-
-
-  @Getter
-  private final EntityRowMapper entityRowMapper;
-
-  @Getter
-  private Connection currentConnection;
 
   @SneakyThrows //todo use properly connection
   public SessionImpl(SessionFactoryImplementor sessionFactoryImplementor) {
-    this.persistenceContext = new PersistenceContext(this, new EntityEntryUpdateStateVerifierImpl(this));
-    this.sessionFactory = sessionFactoryImplementor;
-    this.entityDaoService = new EntityDaoService(this);
-    this.actionQueue = new ActionQueue();
-    this.currentConnection = sessionFactoryImplementor.getDataSource().getConnection();
-    this.jdbcExecutor = new JdbcExecutorImpl(currentConnection);
-    this.entityRowMapper = new EntityRowMapper(this);
+    super(sessionFactoryImplementor);
   }
 
   @Override
@@ -154,47 +114,27 @@ public class SessionImpl implements Session, SessionImplementor {
     }
   }
 
-  //todo think about abstract class where to put this method
-  @Override
-  public <T> EntityDetails getEntityDetails(T entity) {
-    BibernateByteBuddyProxyInterceptor<T> proxyInterceptor = getProxyInterceptor(entity);
-    boolean isProxy = proxyInterceptor != null;
-    Class<?> entityClass = isProxy ? proxyInterceptor.getEntityClass() : entity.getClass();
-    EntityMapping entityMapping = getEntityMapping(entityClass);
-    FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
-    EntityKey<T> entityKey = isProxy ? new EntityKey<>(proxyInterceptor.getEntityClass(), proxyInterceptor.getEntityId())
-                                     : EntityUtils.getEntityKey((Class<T>) entity.getClass(), entity, primaryKeyMapping.getFieldName());
 
-    return new EntityDetails(entityMapping, entityKey, isProxy);
+  //todo implement clear session caches
+  @Override
+  public void invalidateCaches() {
+
   }
 
   @Override
-  public <T> EntityMapping getEntityMapping(Class<T> entityClass) {
-    EntityMapping entityMapping = getSessionFactory()
-      .getMetamodel()
-      .getEntityMappingMap()
-      .get(entityClass);
+  public Connection getConnection() {
+    return currentConnection;
+  }
 
-    if (entityMapping == null) {
-      throw new BibernateException("""
-                                     The specified class %s is not registered as an entity.
-                                     Ensure that the class has been added in configuration and marked as an entity.
-                                     """
-                                     .formatted(entityClass));
+  @Override
+  public Transaction getTransaction() {
+    if (currentTransaction != null && currentTransaction.isActive()) {
+      return currentTransaction;
     }
-
-    return entityMapping;
+    this.currentTransaction = new TransactionImpl(this);
+    return currentTransaction;
   }
 
-  /**
-   * Ensures that the provided entity class is registered with the session factory.
-   * If the entity class is not registered, a {@link BibernateException} is thrown with an error message.
-   *
-   * @param <T>         type of the entity class.
-   * @param entityClass The entity class to validate.
-   *
-   * @throws BibernateException If the entity class is not registered with the session factory.
-   */
   private <T> void ensureEntityClassIsRegistered(Class<T> entityClass) {
     if (validateEntityClass(entityClass)) {
       throw new BibernateException("""
@@ -205,14 +145,6 @@ public class SessionImpl implements Session, SessionImplementor {
     }
   }
 
-  /**
-   * Validates whether the provided entity class is registered with the session factory.
-   *
-   * @param <T>         type of the entity class.
-   * @param entityClass The entity class to validate.
-   *
-   * @return {@code true} if the entity class is not registered, {@code false} otherwise.
-   */
   private <T> boolean validateEntityClass(Class<T> entityClass) {
     return !sessionFactory.getMetamodel().getEntityMappingMap().containsKey(entityClass);
   }
@@ -225,23 +157,4 @@ public class SessionImpl implements Session, SessionImplementor {
     }
   }
 
-  //todo implement clear session caches
-  @Override
-  public void invalidateCaches() {
-
-  }
-
-  @Override
-  public Connection getConnection() throws SQLException {
-    return this.sessionFactory.getDataSource().getConnection();
-  }
-
-  @Override
-  public Transaction getTransaction() {
-    if (сurrentTransaction != null && сurrentTransaction.isActive()) {
-      log.debug("getting exi");
-      return сurrentTransaction;
-    }
-    return new TransactionImpl(this);
-  }
 }
