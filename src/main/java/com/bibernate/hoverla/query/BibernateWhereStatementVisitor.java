@@ -5,10 +5,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.bibernate.grammar.WhereStatementBaseVisitor;
 import com.bibernate.grammar.WhereStatementParser;
 import com.bibernate.hoverla.exceptions.BibernateBqlException;
+import com.bibernate.hoverla.exceptions.BibernateBqlInvalidParameterException;
 import com.bibernate.hoverla.exceptions.BibernateBqlMissingParameterException;
 import com.bibernate.hoverla.jdbc.JdbcParameterBinding;
 import com.bibernate.hoverla.metamodel.FieldMapping;
@@ -169,10 +171,11 @@ public class BibernateWhereStatementVisitor extends WhereStatementBaseVisitor<St
   }
 
   private FieldMapping<?> getFieldMapping(String fieldName) {
-    return metamodel.getEntityMappingMap()
-      .get(entityClass)
-      .getFieldMappingMap()
-      .get(fieldName);
+    return Optional.ofNullable(metamodel.getEntityMappingMap()
+                                 .get(entityClass)
+                                 .getFieldMappingMap()
+                                 .get(fieldName))
+      .orElseThrow(() -> new BibernateBqlInvalidParameterException("Required parameter: %s is not defined within %s".formatted(fieldName, entityClass)));
   }
 
 }

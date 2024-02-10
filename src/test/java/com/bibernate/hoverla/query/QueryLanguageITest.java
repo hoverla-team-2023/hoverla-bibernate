@@ -2,14 +2,13 @@ package com.bibernate.hoverla.query;
 
 import java.util.List;
 
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.bibernate.hoverla.annotations.Column;
 import com.bibernate.hoverla.annotations.Entity;
 import com.bibernate.hoverla.annotations.Id;
+import com.bibernate.hoverla.exceptions.BibernateBqlInvalidParameterException;
 import com.bibernate.hoverla.exceptions.BibernateBqlMissingParameterException;
 import com.bibernate.hoverla.jdbc.PostgresSqlTestExtension;
 import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProviderImpl;
@@ -28,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class QueryLanguageITest {
 
   @RegisterExtension
@@ -140,6 +138,26 @@ class QueryLanguageITest {
           TestEntity.class)
         .getResult());
     }
+  }
+
+  @Test
+  void testBibernateBqlInvalidParameterExceptionThrown() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class);
+    SessionFactoryImpl sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    try (Session session = sessionFactory.openSession()) {
+      BibernateBqlInvalidParameterException exception = assertThrows(BibernateBqlInvalidParameterException.class, () -> session.createQuery(
+          "WHERE idag IN :ids",
+          TestEntity.class)
+        .setParameter("ids", null)
+        .getResult()
+      );
+      assertEquals(
+        "Required parameter: idag is not defined within class com.bibernate.hoverla.query.QueryLanguageITest$TestEntity",
+        exception.getMessage());
+    }
+
   }
 
   @Test
