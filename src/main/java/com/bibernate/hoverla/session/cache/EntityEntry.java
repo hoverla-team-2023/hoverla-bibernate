@@ -20,5 +20,6 @@ public class EntityEntry {
   private boolean isReadOnly;
   private Map<String, Object> snapshot; // snapshot of the entity. Field name used as a map key. Field value used as a map value.
   private EntityState entityState;
+  private boolean isProxy;
 
 }

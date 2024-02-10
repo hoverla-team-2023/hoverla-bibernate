@@ -13,6 +13,7 @@ import org.reflections.Reflections;
 import com.bibernate.hoverla.annotations.Column;
 import com.bibernate.hoverla.annotations.Entity;
 import com.bibernate.hoverla.annotations.Id;
+import com.bibernate.hoverla.annotations.ManyToOne;
 import com.bibernate.hoverla.annotations.Table;
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
 import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
@@ -118,6 +119,7 @@ public class MetamodelScanner {
       .isNullable(resolveColumnProperty(field, Column::nullable, true, false))
       .isUnique(resolveColumnProperty(field, Column::unique, false, true))
       .isPrimaryKey(field.isAnnotationPresent(Id.class))
+      .isManyToOne(field.isAnnotationPresent(ManyToOne.class))
       .build();
   }
 

@@ -24,5 +24,6 @@ public class FieldMapping<T> {
   private boolean isNullable;
   private boolean isUnique;
   private boolean isPrimaryKey;
+  private boolean isManyToOne;
 
 }

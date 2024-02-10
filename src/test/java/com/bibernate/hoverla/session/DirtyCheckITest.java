@@ -64,6 +64,7 @@ class DirtyCheckITest {
       second.title = "Like you do";
       second.artist = "Joji";
       second.genre = Genre.POP;
+      session.flush();
     });
 
     // verify the entities were updated in the database
@@ -96,6 +97,7 @@ class DirtyCheckITest {
       musicRecord.title = newTitle;
       musicRecord.artist = newArtist;
       musicRecord.genre = newGenre;
+      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -129,6 +131,7 @@ class DirtyCheckITest {
       musicRecord.title = newTitle;
       musicRecord.artist = newArtist;
       musicRecord.genre = newGenre;
+      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -167,6 +170,7 @@ class DirtyCheckITest {
       musicRecord.title = newTitle;
       musicRecord.artist = newArtist;
       musicRecord.genre = newGenre;
+      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -198,6 +202,7 @@ class DirtyCheckITest {
       musicRecord.title = oldTitle;
       musicRecord.artist = oldArtist;
       musicRecord.genre = oldGenre;
+      session.flush();
     });
 
     // verify the entity was updated in the database the second time

@@ -2,6 +2,7 @@ package com.bibernate.hoverla.session.dirtycheck;
 
 import java.util.Map;
 
+import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.session.cache.EntityEntry;
 import com.bibernate.hoverla.session.cache.EntityKey;
 
@@ -18,7 +19,7 @@ public interface EntityEntryUpdateStateVerifier {
    *
    * @return entities that should be updated in a database
    */
-  Object[] findDirtyEntities(Map<EntityKey, EntityEntry> persistenceContextMap);
+  Object[] findDirtyEntities(Map<EntityKey<?>, EntityEntry> persistenceContextMap);
 
   /**
    * Looks for updated fields in the given <code>entityEntry</code>.
@@ -28,5 +29,7 @@ public interface EntityEntryUpdateStateVerifier {
    * @return fields that should be updated in a database
    */
   DirtyFieldMapping<?>[] getUpdatedFields(EntityEntry entityEntry);
+
+  public Map<String, Object> getSnapshot(EntityMapping entityMapping, Object entity);
 
 }
