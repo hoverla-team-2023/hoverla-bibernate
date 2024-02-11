@@ -8,6 +8,12 @@ import com.bibernate.hoverla.configuration.Configuration;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Class for managing database connections through various connection pools.
+ */
+@Slf4j
 public class ConnectionPool {
   private static final String HIKARI = "hikari";
   private static final String CONNECTION_POOL_TYPE = "bibernate.connection-pool.type";
@@ -27,8 +33,12 @@ public class ConnectionPool {
         var properties = new Properties();
         properties.putAll(props.getAllProperties(DATA_SOURCE));
         var hikariConfig = new HikariConfig(properties);
-        return new HikariDataSource(hikariConfig);
+        log.info("HikariConfig properties:" + hikariConfig);
+        var dataSource = new HikariDataSource(hikariConfig);
+        log.info("HikariCP DataSource initialized successfully");
+        return dataSource;
       default:
+        log.error("Invalid connection pool type");
         throw new IllegalArgumentException("Invalid connection pool type");
     }
   }

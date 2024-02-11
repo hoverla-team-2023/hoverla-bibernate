@@ -34,10 +34,12 @@ public interface CommonConfig {
   void setProperty(String key, String value);
 
   /**
-   * Retrieves all properties.
+   * Retrieves all properties that start with the specified prefix.
+   * The returned map contains the properties with the prefix removed from the keys.
    *
-   * @return a {@code Map} containing key-value pairs of properties
-   * where keys are of type {@code String} and values are of type {@code String}
+   * @param prefix The prefix to filter the properties by.
+   *
+   * @return A map of properties with the prefix removed from the keys.
    */
   Map<String, String> getAllProperties(String prefix);
 

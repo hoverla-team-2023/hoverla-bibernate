@@ -12,7 +12,13 @@ import com.bibernate.hoverla.session.SessionFactoryImpl;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Configuration class for managing application settings and initializing resources
+ * such as the session factory for database operations.
+ */
+@Slf4j
 @Getter
 @Builder
 public class Configuration {
@@ -31,7 +37,9 @@ public class Configuration {
     if (sessionFactory == null) {
       synchronized (this) {
         if (sessionFactory == null) {
+          log.info("Initializing session factory");
           sessionFactory = buildSessionFactory();
+          log.info("Session factory initialized");
         }
       }
     }
@@ -40,10 +48,15 @@ public class Configuration {
 
   private SessionFactory buildSessionFactory() {
     try {
-      var metamodel = new MetamodelScanner(new JdbcTypeProviderImpl());
+      var metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+      log.debug("Start scanning packageName: " + packageName);
+      var metamodel = metamodelScanner.scanPackage(packageName);
+      log.debug("Metamodel scanner created successfully: " + metamodel);
       var dataSource = ConnectionPool.getDataSource(this);
-      return new SessionFactoryImpl(dataSource, metamodel.scanPackage(packageName));
+      log.debug("DataSource created successfully: " + dataSource);
+      return new SessionFactoryImpl(dataSource, metamodel);
     } catch (Exception e) {
+      log.error("Failed to create session factory: " + e.getMessage());
       throw new ConfigurationException("Failed to create session factory: ", e);
     }
   }
