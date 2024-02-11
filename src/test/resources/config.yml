@@ -1,0 +1,15 @@
+bibernate:
+  connection-pool:
+    type: hikari
+  dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+  dataSource:
+    jdbcUrl: jdbc:postgresql://localhost:5432/testdb
+    username: user
+    password: pass
+    minimumIdle: 5
+    idleTimeout: 600000
+    maximumPoolSize: 15
+    autoCommit: true
+    poolName: HikariCorePool
+    maxLifetime: 1800000
+    connectionTimeout: 30000

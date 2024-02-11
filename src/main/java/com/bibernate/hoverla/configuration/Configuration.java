@@ -5,6 +5,8 @@ import java.util.List;
 import com.bibernate.hoverla.configuration.config.CommonConfig;
 import com.bibernate.hoverla.connectionpool.ConnectionPool;
 import com.bibernate.hoverla.exceptions.ConfigurationException;
+import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProviderImpl;
+import com.bibernate.hoverla.metamodel.scan.MetamodelScanner;
 import com.bibernate.hoverla.session.SessionFactory;
 import com.bibernate.hoverla.session.SessionFactoryImpl;
 
@@ -19,7 +21,6 @@ public class Configuration {
   private CommonConfig properties;
   private List<Class<?>> annotatedClasses;
   private volatile SessionFactory sessionFactory;
-
 
   /**
    * Retrieves the session factory, initializing it if necessary.
@@ -39,11 +40,9 @@ public class Configuration {
 
   private SessionFactory buildSessionFactory() {
     try {
-      // TODO add metamodel
-      //var metamodel = new MetamodelScanner();
-      //metamodel.scanPackage(packageName);
+      var metamodel = new MetamodelScanner(new JdbcTypeProviderImpl());
       var dataSource = ConnectionPool.getDataSource(this);
-      return new SessionFactoryImpl(dataSource, null);
+      return new SessionFactoryImpl(dataSource, metamodel.scanPackage(packageName));
     } catch (Exception e) {
       throw new ConfigurationException("Failed to create session factory: ", e);
     }

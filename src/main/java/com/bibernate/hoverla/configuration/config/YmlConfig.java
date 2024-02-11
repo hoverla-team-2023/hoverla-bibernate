@@ -5,11 +5,17 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.bibernate.hoverla.exceptions.ConfigurationException;
 import com.bibernate.hoverla.utils.ConfigUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
+
+import static com.bibernate.hoverla.utils.ConfigUtils.replace;
 
 public class YmlConfig implements CommonConfig {
 
@@ -32,11 +38,9 @@ public class YmlConfig implements CommonConfig {
   @Override
   public Map<String, String> getAllProperties(String prefix) {
     return properties.entrySet().stream()
-      .filter(entry -> entry.getKey().toString().contains(prefix))
-      .collect(Collectors.toMap(
-        e -> e.getKey().toString(),
-        e -> e.getValue().toString()
-      ));
+      .filter(entry -> containsIgnoreCase(entry.getKey().toString(), prefix))
+      .map(e -> Pair.of(replace(e.getKey().toString(), prefix), e.getValue().toString()))
+      .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
   }
 
 

@@ -5,12 +5,13 @@ import java.util.Properties;
 import javax.sql.DataSource;
 
 import com.bibernate.hoverla.configuration.Configuration;
+import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 public class ConnectionPool {
-
   private static final String HIKARI = "hikari";
-  public static final String CONNECTION_POOL_TYPE = "bibernate.connection-pool.type";
+  private static final String CONNECTION_POOL_TYPE = "bibernate.connection-pool.type";
+  private static final String DATA_SOURCE = "dataSource";
 
   /**
    * Retrieves a data source based on the configuration provided.
@@ -24,10 +25,9 @@ public class ConnectionPool {
     switch (props.getProperty(CONNECTION_POOL_TYPE)) {
       case HIKARI:
         var properties = new Properties();
-        var hikariDataSource = new HikariDataSource();
-        properties.putAll(props.getAllProperties("dataSource"));
-        hikariDataSource.setDataSourceProperties( properties);
-        return hikariDataSource;
+        properties.putAll(props.getAllProperties(DATA_SOURCE));
+        var hikariConfig = new HikariConfig(properties);
+        return new HikariDataSource(hikariConfig);
       default:
         throw new IllegalArgumentException("Invalid connection pool type");
     }
