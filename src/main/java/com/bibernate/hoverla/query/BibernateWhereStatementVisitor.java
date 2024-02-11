@@ -173,7 +173,7 @@ public class BibernateWhereStatementVisitor extends WhereStatementBaseVisitor<St
   private FieldMapping<?> getFieldMapping(String fieldName) {
     return Optional.ofNullable(metamodel.getEntityMappingMap()
                                  .get(entityClass)
-                                 .getFieldMappingMap()
+                                 .getFieldNameMappingMap()
                                  .get(fieldName))
       .orElseThrow(() -> new BibernateBqlInvalidParameterException("Required parameter: %s is not defined within %s".formatted(fieldName, entityClass)));
   }

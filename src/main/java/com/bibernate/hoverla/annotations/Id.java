@@ -9,7 +9,8 @@ import java.lang.annotation.Target;
  * Indicates that the annotated field should be treated as the primary key. Note that it is allowed
  * to specify <code>@Id</code> on multiple fields for composite primary keys.
  *
- * @see GeneratedValue
+ * @see IdentityGeneratedValue
+ * @see SequenceGeneratedValue
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)

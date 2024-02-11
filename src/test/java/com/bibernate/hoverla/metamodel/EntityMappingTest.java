@@ -18,7 +18,7 @@ class EntityMappingTest {
   void getPrimaryKeyMappings() {
     FieldMapping<Object> primaryKeyMapping = FieldMapping.builder().isPrimaryKey(true).build();
 
-    entityMapping.getFieldMappingMap().put("id", primaryKeyMapping);
+    entityMapping.getFieldNameMappingMap().put("id", primaryKeyMapping);
 
     var result = entityMapping.getPrimaryKeyMapping();
 
@@ -26,11 +26,11 @@ class EntityMappingTest {
   }
 
   // @Test
-  //todo
+  //todo:  Yevhenii Savonenko
   void getPrimaryKeyMappings_NoPrimaryKey_ReturnEmptyOptional() {
     FieldMapping<Object> fieldMapping = FieldMapping.builder().build();
 
-    entityMapping.getFieldMappingMap().put("field", fieldMapping);
+    entityMapping.getFieldNameMappingMap().put("field", fieldMapping);
 
     var result = entityMapping.getPrimaryKeyMapping();
 
@@ -42,7 +42,7 @@ class EntityMappingTest {
     FieldMapping<Object> fieldMapping = FieldMapping.builder().build();
     entityMapping.addFieldMapping("field", fieldMapping);
 
-    assertEquals(fieldMapping, entityMapping.getFieldMappingMap().get("field"));
+    assertEquals(fieldMapping, entityMapping.getFieldNameMappingMap().get("field"));
   }
 
 }

@@ -15,7 +15,7 @@ public class EntityRowMapper {
 
     var entity = EntityUtils.newInstanceOf(entityClass);
     int i = 0;
-    for (var fieldMapping : entityMapping.getFieldMappingMap().values()) {
+    for (var fieldMapping : entityMapping.getFieldNameMappingMap().values()) {
       Object columnValue = row[i++];
       if (columnValue == null) {
         EntityUtils.setFieldValue(fieldMapping.getFieldName(), entity, null);

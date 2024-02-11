@@ -12,7 +12,7 @@ public class InsertAction extends EntityAction {
   /**
    * Constructs a new insert action for the specified entity and entity dao service.
    *
-   * @param entity          The entity instance to insert.
+   * @param entity           The entity instance to insert.
    * @param entityDaoService The entity dao service responsible for handling the entity.
    */
   public InsertAction(Object entity, EntityDaoService entityDaoService) {

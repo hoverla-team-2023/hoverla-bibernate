@@ -3,10 +3,7 @@ package com.bibernate.hoverla.utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -28,10 +25,6 @@ import com.bibernate.hoverla.session.cache.EntityKey;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-
-import static java.util.stream.Collectors.toMap;
-
-import static org.apache.logging.log4j.core.util.ReflectionUtil.getFieldValue;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EntityUtils {
@@ -137,21 +130,33 @@ public class EntityUtils {
     }
   }
 
+  public static Object getFieldValue(String fieldName, Object entity) {
+    try {
+      Field field = entity.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      return field.get(entity);
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      throw new BibernateException(String.format(
+        "Error getting value from field %s of entity %s",
+        fieldName,
+        entity.getClass().getName())
+      );
+    }
+  }
+
   public static String getColumnNames(EntityMapping entityMapping) {
-    return entityMapping.getFieldMappingMap().values()
+    return entityMapping.getFieldNameMappingMap().values()
       .stream()
       .map(FieldMapping::getColumnName)
       .collect(Collectors.joining(", "));
   }
 
   public static List<? extends BibernateJdbcType<?>> getJdbcTypes(EntityMapping entityMapping) {
-    return entityMapping.getFieldMappingMap()
+    return entityMapping.getFieldNameMappingMap()
       .values()
       .stream()
       .map(FieldMapping::getJdbcType)
       .collect(Collectors.toList());
   }
-
-
 
 }

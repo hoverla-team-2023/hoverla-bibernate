@@ -13,14 +13,19 @@ import org.reflections.Reflections;
 import com.bibernate.hoverla.annotations.Column;
 import com.bibernate.hoverla.annotations.Entity;
 import com.bibernate.hoverla.annotations.Id;
+import com.bibernate.hoverla.annotations.IdentityGeneratedValue;
 import com.bibernate.hoverla.annotations.ManyToOne;
+import com.bibernate.hoverla.annotations.SequenceGeneratedValue;
 import com.bibernate.hoverla.annotations.Table;
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
+import com.bibernate.hoverla.generator.SequenceGeneratorImpl;
 import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
 import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProvider;
 import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.metamodel.IdGeneratorStrategy;
 import com.bibernate.hoverla.metamodel.Metamodel;
+import com.bibernate.hoverla.metamodel.UnsavedValueStrategy;
 
 import lombok.RequiredArgsConstructor;
 
@@ -77,7 +82,7 @@ public class MetamodelScanner {
       entityMapping.addFieldMapping(field.getName(), fieldMapping);
     }
 
-    validatePrimaryKey(entityClass, entityMapping.getFieldMappingMap().values());
+    validatePrimaryKey(entityClass, entityMapping.getFieldNameMappingMap().values());
 
     return entityMapping;
   }
@@ -120,6 +125,46 @@ public class MetamodelScanner {
       .isUnique(resolveColumnProperty(field, Column::unique, false, true))
       .isPrimaryKey(field.isAnnotationPresent(Id.class))
       .isManyToOne(field.isAnnotationPresent(ManyToOne.class))
+      .idGeneratorStrategy(resolveIdGenerationStrategy(field))
+      .build();
+  }
+
+  private IdGeneratorStrategy resolveIdGenerationStrategy(Field field) {
+    if (!field.isAnnotationPresent(Id.class)) {
+      return null;
+    }
+
+    if (field.isAnnotationPresent(SequenceGeneratedValue.class)) {
+      return getSequenceGeneratedStrategy(field);
+    }
+
+    if (field.isAnnotationPresent(IdentityGeneratedValue.class)) {
+      return getIdenityGeneratedStrategy();
+    }
+
+    return defaultIdGeneratedStrategy();
+
+  }
+
+  private IdGeneratorStrategy getSequenceGeneratedStrategy(Field field) {
+    SequenceGeneratedValue sequence = field.getAnnotation(SequenceGeneratedValue.class);
+    return IdGeneratorStrategy.builder()
+      .isIdentityGenerated(false)
+      .generator(new SequenceGeneratorImpl(sequence.sequenceName(), sequence.allocationSize()))
+      .unsavedValueStrategy(UnsavedValueStrategy.NULL)
+      .build();
+  }
+
+  private IdGeneratorStrategy getIdenityGeneratedStrategy() {
+    return IdGeneratorStrategy.builder()
+      .unsavedValueStrategy(UnsavedValueStrategy.NULL)
+      .isIdentityGenerated(true)
+      .build();
+  }
+
+  private IdGeneratorStrategy defaultIdGeneratedStrategy() {
+    return IdGeneratorStrategy.builder()
+      .unsavedValueStrategy(UnsavedValueStrategy.ALL)
       .build();
   }
 

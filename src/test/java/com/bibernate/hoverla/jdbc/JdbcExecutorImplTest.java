@@ -80,7 +80,8 @@ public class JdbcExecutorImplTest {
                                              new JdbcParameterBinding[] {
                                                new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
                                                new JdbcParameterBinding<>("testLastName", PreparedStatement::setObject),
-                                               new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) }
+                                               new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) },
+                                             ResultSet::getObject
         );
     });
 
@@ -102,7 +103,8 @@ public class JdbcExecutorImplTest {
                                                new JdbcParameterBinding[] {
                                                  new JdbcParameterBinding<>("testName", PreparedStatement::setObject),
                                                  new JdbcParameterBinding<>("testLastName", PreparedStatement::setObject),
-                                                 new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) }
+                                                 new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class)) },
+                                               ResultSet::getObject
           ));
     });
 
@@ -114,9 +116,9 @@ public class JdbcExecutorImplTest {
 
     inTransaction(DB.getDataSource(), connection -> {
       Assertions.assertThrows(BibernateSqlException.class, () -> {
-        SessionImplementor sessionImplementor = mock(SessionImplementor.class);
-        doReturn(connection).when(sessionImplementor).getConnection();
-        JdbcExecutorImpl jdbcExecutor =new JdbcExecutorImpl(sessionImplementor);
+                                SessionImplementor sessionImplementor = mock(SessionImplementor.class);
+                                doReturn(connection).when(sessionImplementor).getConnection();
+                                JdbcExecutorImpl jdbcExecutor = new JdbcExecutorImpl(sessionImplementor);
                                 JdbcParameterBinding<Integer> integerJdbcParameterBinding = new JdbcParameterBinding<>(2, PreparedStatement::setObject);
                                 JdbcParameterBinding<Role> roleJdbcParameterBinding = new JdbcParameterBinding<>(Role.ADMIN, new PostgreSqlJdbcEnumType<>(Role.class));
 
