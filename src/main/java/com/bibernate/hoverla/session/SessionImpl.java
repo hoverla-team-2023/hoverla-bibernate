@@ -6,8 +6,15 @@ import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 
 import com.bibernate.hoverla.action.DeleteAction;
+import com.bibernate.hoverla.action.IdentityInsertAction;
+import com.bibernate.hoverla.action.InsertAction;
 import com.bibernate.hoverla.action.UpdateAction;
 import com.bibernate.hoverla.exceptions.BibernateException;
+import com.bibernate.hoverla.exceptions.PersistOperationException;
+import com.bibernate.hoverla.generator.Generator;
+import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.metamodel.IdGeneratorStrategy;
+import com.bibernate.hoverla.metamodel.UnsavedValueStrategy;
 import com.bibernate.hoverla.query.Query;
 import com.bibernate.hoverla.query.QueryImpl;
 import com.bibernate.hoverla.session.cache.EntityEntry;
@@ -16,6 +23,7 @@ import com.bibernate.hoverla.session.cache.EntityState;
 import com.bibernate.hoverla.session.transaction.Transaction;
 import com.bibernate.hoverla.session.transaction.TransactionImpl;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
+import com.bibernate.hoverla.utils.EntityUtils;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -54,8 +62,23 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   @Override
   public <T> void persist(T entity) {
-    throw new NotImplementedException();
+    verifyIsNotProxy(entity);
 
+    var entityMapping = getEntityMapping(entity.getClass());
+    var primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
+
+    verifyUnsavedValueStrategy(entity, primaryKeyMapping);
+
+    if (isIdentityGenerated(primaryKeyMapping)) {
+      actionQueue.addAction(new IdentityInsertAction(entity, entityDaoService));
+    } else {
+      populateGeneratedIdIfRequired(entity, primaryKeyMapping);
+      actionQueue.addAction(new InsertAction(entity, entityDaoService));
+    }
+
+    EntityDetails entityDetails = getEntityDetails(entity);
+    persistenceContext.manageEntity(entityDetails.entityKey(), () -> entity,
+                                    entityEntry -> {});
   }
 
   @Override
@@ -109,11 +132,11 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
   @SneakyThrows
   public void close() {
     //todo implement it properly
+    invalidateCaches();
     if (currentConnection != null) {
       currentConnection.close();
     }
   }
-
 
   //todo implement clear session caches
   @Override
@@ -133,6 +156,35 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     }
     this.currentTransaction = new TransactionImpl(this);
     return currentTransaction;
+  }
+
+  private boolean isIdentityGenerated(FieldMapping<?> primaryKeyMapping) {
+    return primaryKeyMapping.getIdGeneratorStrategy().isIdentityGenerated();
+  }
+
+  private <T> void verifyIsNotProxy(T entity) {
+    if (EntityProxyUtils.isProxy(entity)) {
+      throw new PersistOperationException("Proxy object passed to persist");
+    }
+  }
+
+  private <T> void verifyUnsavedValueStrategy(T entity, FieldMapping<?> primaryKeyMapping) {
+    IdGeneratorStrategy idGeneratorStrategy = primaryKeyMapping.getIdGeneratorStrategy();
+    if (idGeneratorStrategy.getUnsavedValueStrategy() == UnsavedValueStrategy.NULL) {
+      Object fieldValue = EntityUtils.getFieldValue(primaryKeyMapping.getFieldName(), entity);
+      if (fieldValue != null) {
+        throw new PersistOperationException("Detached entity passed to persist: " + entity.getClass().getName());
+      }
+    }
+  }
+
+  private <T> void populateGeneratedIdIfRequired(T entity, FieldMapping<?> primaryKeyMapping) {
+    IdGeneratorStrategy idGeneratorStrategy = primaryKeyMapping.getIdGeneratorStrategy();
+    Generator generator = idGeneratorStrategy.getGenerator();
+    if (generator != null) {
+      Object generatedValue = generator.generateNext(this.getConnection());
+      EntityUtils.setFieldValue(primaryKeyMapping.getFieldName(), entity, generatedValue);
+    }
   }
 
   private <T> void ensureEntityClassIsRegistered(Class<T> entityClass) {

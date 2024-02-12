@@ -20,7 +20,7 @@ public class EntityMapping {
   private final String tableName;
 
   //  Use LinkedHashMap to preserve column order.
-  private final Map<String, FieldMapping<?>> fieldMappingMap = new LinkedHashMap<>();
+  private final Map<String, FieldMapping<?>> fieldNameMappingMap = new LinkedHashMap<>();
 
   public EntityMapping(Class<?> entityClass) {
     this(entityClass, entityClass.getSimpleName());
@@ -40,18 +40,18 @@ public class EntityMapping {
    */
 
   public FieldMapping<?> getPrimaryKeyMapping() {
-    return fieldMappingMap.values().stream()
+    return fieldNameMappingMap.values().stream()
       .filter(FieldMapping::isPrimaryKey)
       .findAny()
       .orElseThrow(() -> new InvalidEntityDeclarationException("No primary key id declared"));//should never happen
   }
 
   public void addFieldMapping(String fieldName, FieldMapping<?> fieldMapping) {
-    fieldMappingMap.put(fieldName, fieldMapping);
+    fieldNameMappingMap.put(fieldName, fieldMapping);
   }
 
   public FieldMapping<?> getFieldMapping(String fieldName) {
-    return fieldMappingMap.get(fieldName);
+    return fieldNameMappingMap.get(fieldName);
   }
 
 }

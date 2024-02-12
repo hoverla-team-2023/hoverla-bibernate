@@ -49,7 +49,7 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
     Map<String, Object> oldSnapshot = entityEntry.getSnapshot();
     Map<String, Object> currentSnapshot = getSnapshot(entityDetails.entityMapping(), entityEntry.getEntity());
 
-    Map<String, FieldMapping<?>> fieldMappings = entityDetails.entityMapping().getFieldMappingMap();
+    Map<String, FieldMapping<?>> fieldMappings = entityDetails.entityMapping().getFieldNameMappingMap();
 
     return fieldMappings.entrySet().stream()
       .filter(entry -> entry.getValue().isUpdatable())
@@ -131,7 +131,7 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
    *
    * @return map with field names and their values
    */
-  //TODO return Object[]
+  //TODO Yevhenii Savonenko return Object[]
   public Map<String, Object> getSnapshot(EntityMapping entityMapping, Object entity) {
     Object object = EntityProxyUtils.unProxy(entity);
     if (object == null) {
@@ -143,6 +143,7 @@ public class EntityEntryUpdateStateVerifierImpl implements EntityEntryUpdateStat
     return Arrays.stream(entityType.getDeclaredFields())
       .filter(field -> isUpdatableField(entityMapping, field))
       .collect(toMap(Field::getName, field -> ReflectionUtil.getFieldValue(field, object)));
+    //TODO: Yevhenii Savonenko Please do not use toMap if you expect to have nullable value. Anyway return Object[]
   }
 
   private boolean isUpdatableField(EntityMapping entityMapping, Field field) {

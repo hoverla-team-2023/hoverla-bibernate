@@ -57,7 +57,7 @@ class MetamodelScannerTest {
       assertEquals(TestEntity.class, testEntityMapping.getEntityClass());
       assertEquals("test_entity", testEntityMapping.getTableName());
 
-      Map<String, FieldMapping<?>> testEntityFieldMappingMap = testEntityMapping.getFieldMappingMap();
+      Map<String, FieldMapping<?>> testEntityFieldMappingMap = testEntityMapping.getFieldNameMappingMap();
       FieldMapping<?> id = testEntityFieldMappingMap.get("id");
       assertFieldMapping(id, "id", int.class, "id", false, false, false, true, true);
 
@@ -109,7 +109,7 @@ class MetamodelScannerTest {
     assertEquals(TestEntityWithJdbcType.class, entityMapping.getEntityClass());
     assertEquals("test_entity_with_jdbc_type", entityMapping.getTableName());
 
-    Map<String, FieldMapping<?>> fieldMappingMap = entityMapping.getFieldMappingMap();
+    Map<String, FieldMapping<?>> fieldMappingMap = entityMapping.getFieldNameMappingMap();
     FieldMapping<?> id = fieldMappingMap.get("id");
     assertFieldMapping(id, "id", int.class, "id", false, false, false, true, true);
 

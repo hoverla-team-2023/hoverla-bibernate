@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class DirtyCheckITest {
 
   @RegisterExtension
-  static PostgresSqlTestExtension DB = new PostgresSqlTestExtension("session/init.sql", "session/clear.sql");
+  static PostgresSqlTestExtension DB = new PostgresSqlTestExtension("session-dirty-check/init.sql", "session-dirty-check/clear.sql");
 
   @Test
   @SneakyThrows

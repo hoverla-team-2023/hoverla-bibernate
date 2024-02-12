@@ -49,15 +49,21 @@ public class JdbcExecutorImpl implements JdbcExecutor {
   }
 
   @Override
-  public Object executeUpdateAndReturnGeneratedKeys(String sqlTemplate, JdbcParameterBinding<?>[] bindValues) {
+  public Object executeUpdateAndReturnGeneratedKeys(String sqlTemplate, JdbcParameterBinding<?>[] bindValues, JdbcResultExtractor<?> jdbcResultExtractor) {
+    log.debug("Executing update query and returning generated keys: {}", sqlTemplate);
+
     try (PreparedStatement preparedStatement = sessionImplementor.getConnection().prepareStatement(sqlTemplate, PreparedStatement.RETURN_GENERATED_KEYS)) {
       bindParameters(preparedStatement, bindValues);
       preparedStatement.executeUpdate();
       ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+      Object generatedKey = null;
       if (generatedKeys.next()) {
-        return generatedKeys.getObject(1);
+        generatedKey = jdbcResultExtractor.extractData(generatedKeys, 1);
       }
-      throw new BibernateSqlException("Can not obtain generated keys");
+      if (generatedKey == null) {
+        throw new BibernateSqlException("Can not obtain generated keys");
+      }
+      return generatedKey;
     } catch (SQLException sqlException) {
       throw new BibernateSqlException(sqlException.getMessage(), sqlException);
     }

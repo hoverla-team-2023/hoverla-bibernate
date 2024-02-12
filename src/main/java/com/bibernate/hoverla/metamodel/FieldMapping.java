@@ -26,4 +26,6 @@ public class FieldMapping<T> {
   private boolean isPrimaryKey;
   private boolean isManyToOne;
 
+  private IdGeneratorStrategy idGeneratorStrategy;
+
 }

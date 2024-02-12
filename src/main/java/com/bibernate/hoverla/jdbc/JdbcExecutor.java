@@ -17,7 +17,9 @@ public interface JdbcExecutor {
    * @param sqlTemplate      The SQL query template to be executed.
    * @param bindValues       An array of parameter bindings for the SQL query.
    * @param resultExtractors An array of result extractors for processing the query result.
+   *
    * @return A list of Object arrays representing the query results.
+   *
    * @throws BibernateSqlException If an SQL exception occurs during query execution.
    */
   List<Object[]> executeSelectQuery(String sqlTemplate,
@@ -30,11 +32,15 @@ public interface JdbcExecutor {
    *
    * @param sqlTemplate The SQL update, insert, or delete query template to be executed.
    * @param bindValues  An array of parameter bindings for the SQL query.
+   *
    * @return An Object representing the generated keys, if available, or null otherwise.
+   *
    * @throws BibernateSqlException If an SQL exception occurs during query execution.
    */
   Object executeUpdateAndReturnGeneratedKeys(String sqlTemplate,
-                                             JdbcParameterBinding<?>[] bindValues);
+                                             JdbcParameterBinding<?>[] bindValues,
+                                             JdbcResultExtractor<?> jdbcResultExtractor
+  );
 
   /**
    * Executes an update, insert, or delete query with the given SQL template and parameter bindings
@@ -42,8 +48,11 @@ public interface JdbcExecutor {
    *
    * @param sqlTemplate The SQL update, insert, or delete query template to be executed.
    * @param bindValues  An array of parameter bindings for the SQL query.
+   *
    * @return The number of rows affected by the update, insert, or delete operation.
+   *
    * @throws BibernateSqlException If an SQL exception occurs during query execution.
    */
   int executeUpdate(String sqlTemplate, JdbcParameterBinding<?>[] bindValues);
+
 }
