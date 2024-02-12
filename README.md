@@ -1,1 +1,54 @@
-# hoverla-bibernate
+# Hoverla Bibernate
+
+Bibernate is an advanced ORM (Object-Relational Mapping) framework designed to facilitate seamless data interaction between Java applications and relational databases. This document provides detailed guidance on configuring Bibernate, a lightweight and high-performance JDBC connection pool.
+
+## Configuration
+
+Bibernate leverages connection pool for its datasource management, ensuring optimal database performance and resource utilization. Below is the recommended configuration setup for integrating HikariCP with Bibernate:
+
+```yaml
+bibernate:
+  connection-pool:
+    type: hikari
+  dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+  dataSource:
+    jdbcUrl: jdbc:postgresql://host:5432/db
+    username: user
+    password: pass
+    minimumIdle: 5
+    idleTimeout: 600000
+    maximumPoolSize: 15
+    autoCommit: true
+    poolName: HikariCorePool
+    maxLifetime: 1800000
+    connectionTimeout: 30000
+```
+
+## Getting Started
+
+To get started with Bibernate:
+
+1. **Configure DataSource**: Set up your datasource in an `config.yml`, `config.xml` or `config.properties` file as described in the configuration section. Ensure to replace the placeholders with your actual database details.
+
+2. **Initialize Bibernate**: Utilize Bibernate's session factory to manage database sessions for performing CRUD operations.
+
+## Example Usage
+```java
+public class Example {
+
+    public void setup() {
+      // Load properties
+      CommonConfig commonConfig = CommonConfig.of("config.yml");
+      // Add more configurations as needed
+
+        Configuration configuration = Configuration.builder()
+                .packageName(this.getClass().getPackageName()) // Scan metamodel
+                .properties(commonConfig) // Add properties
+                .annotatedClasses() // Add your entity classes here
+                .build();
+
+        // Now you can use configuration.getSessionFactory() to get the session factory
+        // and manage your database sessions.
+    }
+}
+```

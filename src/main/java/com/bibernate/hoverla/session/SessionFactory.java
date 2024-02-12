@@ -5,9 +5,13 @@ import java.util.function.Function;
 
 import static com.bibernate.hoverla.utils.TransactionManagementUtils.manageTransaction;
 
+import javax.sql.DataSource;
+
 public interface SessionFactory {
 
   Session openSession();
+
+  DataSource getDataSource();
 
   default void inSession(Consumer<Session> action) {
     try (Session session = openSession()) {

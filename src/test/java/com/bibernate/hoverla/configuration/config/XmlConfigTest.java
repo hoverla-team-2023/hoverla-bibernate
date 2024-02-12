@@ -26,4 +26,13 @@ public class XmlConfigTest {
     config.setProperty(username, "newUser");
     assertEquals("newUser", config.getProperty(username));
   }
+
+  @Test
+  public void shouldGetAllProperties() {
+    var properties = config.getAllProperties("connection");
+    assertEquals(3, properties.size());
+    assertEquals("jdbc:mysql://localhost:3306/mydb", config.getProperty("connection.url"));
+    assertEquals("user", config.getProperty("connection.username"));
+    assertEquals("pass", config.getProperty("connection.password"));
+  }
 }

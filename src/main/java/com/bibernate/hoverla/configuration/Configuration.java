@@ -1,34 +1,45 @@
 package com.bibernate.hoverla.configuration;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.List;
 
 import com.bibernate.hoverla.configuration.config.CommonConfig;
+import com.bibernate.hoverla.connectionpool.ConnectionPool;
 import com.bibernate.hoverla.exceptions.ConfigurationException;
+import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProviderImpl;
+import com.bibernate.hoverla.metamodel.scan.MetamodelScanner;
 import com.bibernate.hoverla.session.SessionFactory;
 import com.bibernate.hoverla.session.SessionFactoryImpl;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Configuration class for managing application settings and initializing resources
+ * such as the session factory for database operations.
+ */
+@Slf4j
 @Getter
 @Builder
 public class Configuration {
-  public static final String URL = "bibernate.connection.url";
-  public static final String USERNAME = "bibernate.connection.username";
-  public static final String PASSWORD = "bibernate.connection.password";
 
   private String packageName;
   private CommonConfig properties;
   private List<Class<?>> annotatedClasses;
   private volatile SessionFactory sessionFactory;
 
+  /**
+   * Retrieves the session factory, initializing it if necessary.
+   *
+   * @return The session factory instance.
+   */
   public SessionFactory getSessionFactory() {
     if (sessionFactory == null) {
       synchronized (this) {
         if (sessionFactory == null) {
+          log.info("Initializing session factory");
           sessionFactory = buildSessionFactory();
+          log.info("Session factory initialized");
         }
       }
     }
@@ -37,17 +48,15 @@ public class Configuration {
 
   private SessionFactory buildSessionFactory() {
     try {
-      Connection connection = DriverManager.getConnection(
-        properties.getProperty(URL),
-        properties.getProperty(USERNAME),
-        properties.getProperty(PASSWORD)
-      );
-
-      //TODO var metamodel = new MetamodelScanner();
-      //metamodel.scanPackage(packageName);
-
-      return new SessionFactoryImpl(connection);
+      var metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+      log.debug("Start scanning packageName: " + packageName);
+      var metamodel = metamodelScanner.scanPackage(packageName);
+      log.debug("Metamodel scanner created successfully: " + metamodel);
+      var dataSource = ConnectionPool.getDataSource(this);
+      log.debug("DataSource created successfully: " + dataSource);
+      return new SessionFactoryImpl(dataSource, metamodel);
     } catch (Exception e) {
+      log.error("Failed to create session factory: " + e.getMessage());
       throw new ConfigurationException("Failed to create session factory: ", e);
     }
   }
