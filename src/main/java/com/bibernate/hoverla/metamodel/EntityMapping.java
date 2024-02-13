@@ -1,7 +1,9 @@
 package com.bibernate.hoverla.metamodel;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
 
@@ -52,6 +54,14 @@ public class EntityMapping {
 
   public FieldMapping<?> getFieldMapping(String fieldName) {
     return fieldNameMappingMap.get(fieldName);
+  }
+
+  public List<FieldMapping<?>> getFieldMappings(Predicate<? super FieldMapping<?>> predicate) {
+    return getFieldNameMappingMap()
+      .values()
+      .stream()
+      .filter(predicate)
+      .toList();
   }
 
 }

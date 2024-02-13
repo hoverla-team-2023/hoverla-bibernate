@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.bibernate.hoverla.collection.PersistenceLazyList;
 import com.bibernate.hoverla.session.LockMode;
 import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.dirtycheck.DirtyCheckService;
@@ -23,6 +24,8 @@ public class PersistenceContext {
 
   @Getter
   private final Map<EntityKey<?>, EntityEntry> entityKeyEntityEntryMap = new HashMap<>();
+  private final Map<CollectionKey<?>, PersistenceLazyList<?>> collectionsMap = new HashMap<>();
+
   private final SessionImplementor sessionImplementor;
   private final DirtyCheckService dirtyCheckService;
 
@@ -46,6 +49,10 @@ public class PersistenceContext {
     }
 
     return entityEntry;
+  }
+
+  public void manageCollection(CollectionKey<?> collectionKey, PersistenceLazyList<?> collection) {
+    collectionsMap.put(collectionKey, collection);
   }
 
   private EntityEntry putNewEntityEntry(EntityKey<?> entityKey, Supplier<Object> getEntityOrProxyFunction) {
