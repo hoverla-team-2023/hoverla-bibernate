@@ -3,7 +3,10 @@ package com.bibernate.hoverla.metamodel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EntityMappingTest {
 
@@ -25,16 +28,15 @@ class EntityMappingTest {
     assertEquals(primaryKeyMapping, result);
   }
 
-  // @Test
-  //todo:  Yevhenii Savonenko
-  void getPrimaryKeyMappings_NoPrimaryKey_ReturnEmptyOptional() {
+  @Test
+  void getPrimaryKeyMappings_NoPrimaryKey_ThrowInvalidEntityDeclarationException() {
     FieldMapping<Object> fieldMapping = FieldMapping.builder().build();
 
     entityMapping.getFieldNameMappingMap().put("field", fieldMapping);
 
-    var result = entityMapping.getPrimaryKeyMapping();
+    InvalidEntityDeclarationException result = assertThrows(InvalidEntityDeclarationException.class, () -> entityMapping.getPrimaryKeyMapping());
 
-    //assertTrue(result.isEmpty());
+    assertEquals("No primary key id declared", result.getMessage());
   }
 
   @Test

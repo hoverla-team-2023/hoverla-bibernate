@@ -1,3 +1,7 @@
 DROP TABLE IF EXISTS music_record;
 
 DROP TYPE IF EXISTS genre;
+
+DROP TABLE IF EXISTS item_comment;
+
+DROP TABLE IF EXISTS store_item;

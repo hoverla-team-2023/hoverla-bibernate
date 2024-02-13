@@ -1,6 +1,5 @@
 package com.bibernate.hoverla.session;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -73,7 +72,7 @@ public class EntityDaoService {
 
     log.debug("Updating entity: {}", entityKey);
 
-    DirtyFieldMapping<?>[] dirtyFields = session.getPersistenceContext().getUpdatedFields(entity);
+    List<DirtyFieldMapping<Object>> dirtyFields = session.getDirtyCheckService().getUpdatedFields(entity);
 
     var entityMapping = entityDetails.entityMapping();
     FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
@@ -88,7 +87,7 @@ public class EntityDaoService {
     );
 
     JdbcParameterBinding<?>[] parameterBindings = Stream.concat(
-        Arrays.stream(dirtyFields)
+        dirtyFields.stream()
           .map(field -> bindParameter(field.value(), field.fieldMapping().getJdbcType())),
         Stream.of(entityKey)
           .map(key -> bindParameter(key.id(), primaryKeyMapping.getJdbcType())))
@@ -178,8 +177,20 @@ public class EntityDaoService {
       .toArray(new JdbcParameterBinding<?>[0]);
   }
 
-  private String getColumnsToUpdate(DirtyFieldMapping<?>[] dirtyFields) {
-    return Arrays.stream(dirtyFields)
+  /**
+   * Generates a comma-separated string of column names to be updated based on the dirty fields provided.
+   * This method takes an array of {@link DirtyFieldMapping} objects as input, which represent the dirty fields of an entity.
+   * It streams over the array, maps each {@link DirtyFieldMapping} to its associated {@link FieldMapping}, and then maps each {@link FieldMapping} to a
+   * string representation of the column name to be updated.
+   * The string is formatted as "columnName=?" for each column that needs to be updated.
+   * The resulting strings are then joined together into a single comma-separated string.
+   *
+   * @param dirtyFields An array of {@link DirtyFieldMapping} objects representing the dirty fields of an entity.
+   *
+   * @return A comma-separated string of column names to be updated, each formatted as "columnName=?".
+   */
+  private String getColumnsToUpdate(List<DirtyFieldMapping<Object>> dirtyFields) {
+    return dirtyFields.stream()
       .map(DirtyFieldMapping::fieldMapping)
       .map(fieldMapping -> fieldMapping.getColumnName() + "=?")
       .collect(joining(","));

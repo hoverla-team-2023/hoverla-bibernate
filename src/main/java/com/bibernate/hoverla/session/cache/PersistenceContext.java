@@ -7,10 +7,10 @@ import java.util.function.Supplier;
 
 import com.bibernate.hoverla.session.LockMode;
 import com.bibernate.hoverla.session.SessionImplementor;
-import com.bibernate.hoverla.session.dirtycheck.DirtyFieldMapping;
-import com.bibernate.hoverla.session.dirtycheck.EntityEntryUpdateStateVerifier;
+import com.bibernate.hoverla.session.dirtycheck.DirtyCheckService;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,9 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PersistenceContext {
 
+  @Getter
   private final Map<EntityKey<?>, EntityEntry> entityKeyEntityEntryMap = new HashMap<>();
   private final SessionImplementor sessionImplementor;
-  private final EntityEntryUpdateStateVerifier entityEntryStateVerifier;
+  private final DirtyCheckService dirtyCheckService;
 
   public EntityEntry getEntityEntry(EntityKey<?> entityKey) {
     return entityKeyEntityEntryMap.get(entityKey);
@@ -36,7 +37,7 @@ public class PersistenceContext {
       entityEntry = putNewEntityEntry(entityKey, getEntityOrProxyFunction);
     } else {
       initialyProxyIfNeeded(getEntityOrProxyFunction, entityEntry);
-      entityEntry.setSnapshot(entityEntryStateVerifier.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entityEntry.getEntity()));
+      entityEntry.setSnapshot(dirtyCheckService.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entityEntry.getEntity()));
 
     }
 
@@ -62,7 +63,7 @@ public class PersistenceContext {
     }
 
     entityEntry.setEntity(entity);
-    entityEntry.setSnapshot(entityEntryStateVerifier.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entity));
+    entityEntry.setSnapshot(dirtyCheckService.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entity));
     return entityEntry;
   }
 
@@ -73,19 +74,6 @@ public class PersistenceContext {
         EntityProxyUtils.initializeProxy(entityEntry.getEntity(), entity);
       }
     }
-  }
-
-  //todo Yevhenii Savonenko: should return list move it to DirtyCheckService
-  public Object[] getUpdatedEntities() {
-    return entityEntryStateVerifier.findDirtyEntities(entityKeyEntityEntryMap);
-  }
-
-  //todo Yevhenii Savonenko: move it to DirtyCheckService
-  public <T> DirtyFieldMapping<?>[] getUpdatedFields(T entity) {
-    var entityDetails = sessionImplementor.getEntityDetails(entity);
-    var entityEntry = getEntityEntry(entityDetails.entityKey());
-
-    return entityEntryStateVerifier.getUpdatedFields(entityEntry);
   }
 
 }

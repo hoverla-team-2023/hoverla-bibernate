@@ -7,8 +7,10 @@ import com.bibernate.hoverla.exceptions.BibernateException;
 import com.bibernate.hoverla.jdbc.JdbcExecutor;
 import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.session.cache.EntityEntry;
 import com.bibernate.hoverla.session.cache.EntityKey;
 import com.bibernate.hoverla.session.cache.PersistenceContext;
+import com.bibernate.hoverla.session.dirtycheck.DirtyCheckService;
 import com.bibernate.hoverla.utils.EntityUtils;
 import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
 
@@ -63,6 +65,8 @@ public interface SessionImplementor extends Session {
 
   EntityRowMapper getEntityRowMapper();
 
+  DirtyCheckService getDirtyCheckService();
+
   default <T> EntityMapping getEntityMapping(Class<T> entityClass) {
     EntityMapping entityMapping = getSessionFactory()
       .getMetamodel()
@@ -80,7 +84,7 @@ public interface SessionImplementor extends Session {
     return entityMapping;
   }
 
-  default  <T> EntityDetails getEntityDetails(T entity) {
+  default <T> EntityDetails getEntityDetails(T entity) {
     BibernateByteBuddyProxyInterceptor<T> proxyInterceptor = getProxyInterceptor(entity);
     boolean isProxy = proxyInterceptor != null;
     Class<?> entityClass = isProxy ? proxyInterceptor.getEntityClass() : entity.getClass();
@@ -95,5 +99,9 @@ public interface SessionImplementor extends Session {
   void invalidateCaches();
 
   Connection getConnection();
+
+  default EntityEntry getEntityEntry(EntityKey<?> entityKey) {
+    return getPersistenceContext().getEntityEntry(entityKey);
+  }
 
 }
