@@ -1,6 +1,7 @@
 package com.bibernate.hoverla.session;
 
 import java.sql.Connection;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -202,7 +203,7 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
   }
 
   private void updateEntitiesIfDirty() {
-    Object[] dirtyEntities = persistenceContext.getUpdatedEntities();
+    List<Object> dirtyEntities = dirtyCheckService.findDirtyEntities();
     for (Object entity : dirtyEntities) {
       log.debug("Updating the dirty entity: {}", getEntityDetails(entity).entityKey());
       actionQueue.addAction(new UpdateAction(entity, entityDaoService));

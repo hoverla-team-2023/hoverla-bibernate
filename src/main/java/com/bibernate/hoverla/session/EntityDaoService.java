@@ -73,7 +73,8 @@ public class EntityDaoService {
 
     log.debug("Updating entity: {}", entityKey);
 
-    DirtyFieldMapping<?>[] dirtyFields = session.getPersistenceContext().getUpdatedFields(entity);
+//    DirtyFieldMapping<?>[] dirtyFields = session.getPersistenceContext().getUpdatedFields(entity);
+    List<DirtyFieldMapping<Object>> dirtyFields = session.getDirtyCheckService().getUpdatedFields(entity);
 
     var entityMapping = entityDetails.entityMapping();
     FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
@@ -88,7 +89,7 @@ public class EntityDaoService {
     );
 
     JdbcParameterBinding<?>[] parameterBindings = Stream.concat(
-        Arrays.stream(dirtyFields)
+        dirtyFields.stream()
           .map(field -> bindParameter(field.value(), field.fieldMapping().getJdbcType())),
         Stream.of(entityKey)
           .map(key -> bindParameter(key.id(), primaryKeyMapping.getJdbcType())))
@@ -178,8 +179,8 @@ public class EntityDaoService {
       .toArray(new JdbcParameterBinding<?>[0]);
   }
 
-  private String getColumnsToUpdate(DirtyFieldMapping<?>[] dirtyFields) {
-    return Arrays.stream(dirtyFields)
+  private String getColumnsToUpdate(List<DirtyFieldMapping<Object>> dirtyFields) {
+    return dirtyFields.stream()
       .map(DirtyFieldMapping::fieldMapping)
       .map(fieldMapping -> fieldMapping.getColumnName() + "=?")
       .collect(joining(","));

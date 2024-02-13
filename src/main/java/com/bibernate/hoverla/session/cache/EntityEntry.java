@@ -1,7 +1,5 @@
 package com.bibernate.hoverla.session.cache;
 
-import java.util.Map;
-
 import com.bibernate.hoverla.session.LockMode;
 
 import lombok.AllArgsConstructor;
@@ -18,7 +16,7 @@ public class EntityEntry {
   private Object entity;
   private LockMode lockMode;
   private boolean isReadOnly;
-  private Map<String, Object> snapshot; // snapshot of the entity. Field name used as a map key. Field value used as a map value.
+  private Object[] snapshot;
   private EntityState entityState;
   private boolean isProxy;
 

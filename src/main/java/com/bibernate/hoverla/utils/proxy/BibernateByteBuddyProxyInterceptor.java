@@ -1,6 +1,7 @@
 package com.bibernate.hoverla.utils.proxy;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -95,12 +96,14 @@ public class BibernateByteBuddyProxyInterceptor<T> {
       if (session == null) {
         throw new LazyLoadingException("Failed to load entity: session is null.");
       }
-      Object load = session.getEntityDaoService().load(new EntityKey<>(entityClass, entityId));
-      //todo save snapshot and change error message
-      if (load == null) {
+      EntityKey<T> entityKey = new EntityKey<>(entityClass, entityId);
+      Object loaded = session.getEntityDaoService().load(entityKey);
+      session.getPersistenceContext().manageEntity(entityKey, () -> loaded, entry -> {});
+      //todo change error message
+      if (loaded == null) {
         throw new BibernateException();
       }
-      this.loadedEntity = load;
+      this.loadedEntity = loaded;
     }
   }
 
