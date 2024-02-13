@@ -13,6 +13,8 @@ import com.bibernate.hoverla.jdbc.JdbcParameterBinding;
 import com.bibernate.hoverla.jdbc.JdbcResultExtractor;
 import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.metamodel.OneToManyMapping;
+import com.bibernate.hoverla.session.cache.CollectionKey;
 import com.bibernate.hoverla.session.cache.EntityKey;
 import com.bibernate.hoverla.session.dirtycheck.DirtyFieldMapping;
 import com.bibernate.hoverla.utils.EntityUtils;
@@ -58,6 +60,35 @@ public class EntityDaoService {
       .executeUpdateAndReturnGeneratedKeys(insertStatement, parameterBindings, primaryKeyMapping.getJdbcType());
 
     EntityUtils.setFieldValue(primaryKeyMapping.getFieldName(), entity, generatedKey);
+  }
+
+  public <T> List<T> loadCollection(CollectionKey<?> collectionKey) {
+    EntityMapping entityMappingOfParent = session.getEntityMapping(collectionKey.entityType());
+    FieldMapping<?> fieldMapping = entityMappingOfParent.getFieldMapping(collectionKey.collectionName());
+    OneToManyMapping oneToManyMapping = fieldMapping.getOneToManyMapping();
+
+    Class<T> entityType = (Class<T>) oneToManyMapping.getCollectionType();
+    EntityMapping entityMapping = session.getEntityMapping(entityType);
+    FieldMapping<?> joinColumn = entityMapping.getFieldMapping(oneToManyMapping.getMappedBy());
+
+    String selectStatement = SELECT_FROM_TABLE_BY_ID.formatted(EntityUtils.getColumnNames(entityMapping),
+                                                               entityMapping.getTableName(),
+                                                               joinColumn.getColumnName());
+
+    JdbcParameterBinding<?>[] bindValues = { bindParameter(collectionKey.id(),
+                                                           joinColumn.getJdbcType()) };
+
+    var jdbcResultExtractors = EntityUtils.getJdbcTypes(entityMapping);
+
+    List<Object[]> rows = session.getJdbcExecutor().executeSelectQuery(selectStatement,
+                                                                       bindValues,
+                                                                       jdbcResultExtractors.toArray(new JdbcResultExtractor<?>[0]));
+    log.debug("Creating collection {}", entityType);
+
+    return rows.stream()
+      .map(row -> session.getEntityRowMapper()
+        .createEntityFromRow(row, entityType))
+      .collect(Collectors.toList());
   }
 
   private void verifyInsertOperation(int updatedRows) {

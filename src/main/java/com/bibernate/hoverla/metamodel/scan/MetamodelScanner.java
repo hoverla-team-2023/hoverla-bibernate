@@ -1,6 +1,7 @@
 package com.bibernate.hoverla.metamodel.scan;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -15,8 +16,10 @@ import com.bibernate.hoverla.annotations.Entity;
 import com.bibernate.hoverla.annotations.Id;
 import com.bibernate.hoverla.annotations.IdentityGeneratedValue;
 import com.bibernate.hoverla.annotations.ManyToOne;
+import com.bibernate.hoverla.annotations.OneToMany;
 import com.bibernate.hoverla.annotations.SequenceGeneratedValue;
 import com.bibernate.hoverla.annotations.Table;
+import com.bibernate.hoverla.annotations.Transient;
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
 import com.bibernate.hoverla.generator.SequenceGeneratorImpl;
 import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
@@ -25,6 +28,7 @@ import com.bibernate.hoverla.metamodel.EntityMapping;
 import com.bibernate.hoverla.metamodel.FieldMapping;
 import com.bibernate.hoverla.metamodel.IdGeneratorStrategy;
 import com.bibernate.hoverla.metamodel.Metamodel;
+import com.bibernate.hoverla.metamodel.OneToManyMapping;
 import com.bibernate.hoverla.metamodel.UnsavedValueStrategy;
 
 import lombok.RequiredArgsConstructor;
@@ -78,6 +82,9 @@ public class MetamodelScanner {
 
     Field[] declaredFields = entityClass.getDeclaredFields();
     for (var field : declaredFields) {
+      if (field.isAnnotationPresent(Transient.class)) {
+        continue;
+      }
       FieldMapping<?> fieldMapping = scanField(field);
       entityMapping.addFieldMapping(field.getName(), fieldMapping);
     }
@@ -114,18 +121,36 @@ public class MetamodelScanner {
   }
 
   private <T> FieldMapping<T> scanField(Field field) {
-    return FieldMapping.<T>builder()
+    FieldMapping<T> fieldMapping = FieldMapping.<T>builder()
       .columnName(resolveColumnName(field))
       .jdbcType(resolveJdbcType(field))
       .fieldType(resolveFieldType(field))
       .fieldName(field.getName())
-      .isInsertable(resolveColumnProperty(field, Column::insertable, true, false))
-      .isUpdatable(resolveColumnProperty(field, Column::updatable, true, false))
+      .isInsertable(!field.isAnnotationPresent(OneToMany.class) && resolveColumnProperty(field, Column::insertable, true, false))
+      .isUpdatable(!field.isAnnotationPresent(OneToMany.class) && resolveColumnProperty(field, Column::updatable, true, false))
       .isNullable(resolveColumnProperty(field, Column::nullable, true, false))
       .isUnique(resolveColumnProperty(field, Column::unique, false, true))
       .isPrimaryKey(field.isAnnotationPresent(Id.class))
       .isManyToOne(field.isAnnotationPresent(ManyToOne.class))
       .idGeneratorStrategy(resolveIdGenerationStrategy(field))
+      .oneToManyMapping(resolveOneToManyMapping(field))
+      .isOneToMany(field.isAnnotationPresent(OneToMany.class))
+      .build();
+    return fieldMapping;
+  }
+
+  private OneToManyMapping resolveOneToManyMapping(Field field) {
+    OneToMany annotation = field.getAnnotation(OneToMany.class);
+    if (annotation == null) {
+      return null;
+    }
+    var parameterizedType = (ParameterizedType) field.getGenericType();
+    var typeArguments = parameterizedType.getActualTypeArguments();
+    var actualTypeArgument = typeArguments[0];
+    var relatedEntityType = (Class<?>) actualTypeArgument;
+    return OneToManyMapping.builder()
+      .mappedBy(annotation.mappedBy())
+      .collectionType(relatedEntityType)
       .build();
   }
 
