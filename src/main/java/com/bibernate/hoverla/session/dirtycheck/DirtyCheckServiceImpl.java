@@ -61,9 +61,9 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
 
     Map<String, FieldMapping<?>> fieldMappings = entityDetails.entityMapping().getFieldNameMappingMap();
     Iterator<FieldMapping<?>> iterator = fieldMappings.values().iterator();
-    int index = 0;
 
     List<DirtyFieldMapping<Object>> dirtyFieldMappings = new ArrayList<>();
+    int index = 0;
 
     while (iterator.hasNext()) {
       FieldMapping<?> fieldMapping = iterator.next();
@@ -77,15 +77,6 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
     return dirtyFieldMappings;
   }
 
-  /**
-   * Converts the given <code>entity</code> into a map of field name and field value. Only {@link FieldMapping#isUpdatable() updatable} fields are included
-   * in the result map.
-   *
-   * @param entityMapping entity mapping
-   * @param entity        entity to convert
-   *
-   * @return map with field names and their values
-   */
   public Object[] getSnapshot(EntityMapping entityMapping, Object entity) {
     Object unProxied = EntityProxyUtils.unProxy(entity);
     if (unProxied == null) {
@@ -106,6 +97,14 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
     return entry.getValue().isReadOnly();
   }
 
+  /**
+   * Determines if an entity is considered "dirty" based on its snapshots.
+   *
+   * @param entityType  The class of the entity to check.
+   * @param entityEntry The entity entry containing the snapshots to compare.
+   *
+   * @return {@code true} if the entity is considered dirty, {@code false} otherwise.
+   */
   private boolean isDirtyEntity(Class<?> entityType, EntityEntry entityEntry) {
     var entityMapping = sessionImplementor.getEntityMapping(entityType);
 
@@ -133,6 +132,15 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
     return false;
   }
 
+  /**
+   * This method retrieves the dirty field mapping for a given entity.
+   *
+   * @param entityType   the class of the entity
+   * @param entity       the entity object
+   * @param fieldMapping field mapping
+   *
+   * @return a DirtyFieldMapping object containing the field mapping and its value
+   */
   @SuppressWarnings("unchecked")
   private <T> DirtyFieldMapping<T> getDirtyFieldMapping(Class<?> entityType, Object entity, FieldMapping<?> fieldMapping) {
     String fieldName = fieldMapping.getFieldName();

@@ -202,6 +202,12 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     return !sessionFactory.getMetamodel().getEntityMappingMap().containsKey(entityClass);
   }
 
+  /**
+   * Updates the entities that have been marked as dirty in the persistence context.
+   * This method retrieves all entities that have been updated (marked as dirty) from the persistence context.
+   * For each dirty entity, it logs the details of the entity and adds an update action to the action queue.
+   * The update action is associated with the entity and the entity DAO service.
+   */
   private void updateEntitiesIfDirty() {
     List<Object> dirtyEntities = dirtyCheckService.findDirtyEntities();
     for (Object entity : dirtyEntities) {
