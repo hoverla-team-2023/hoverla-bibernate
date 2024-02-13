@@ -79,6 +79,17 @@ public class BibernateByteBuddyProxyInterceptor<T> {
     if (isIdGetter(method)) {
       return entityId;
     }
+    loadProxy();
+    return method.invoke(loadedEntity, args);
+  }
+
+  public void set(Object obj, @This Object self, @Origin Method setter) throws Throwable {
+    loadProxy();
+    setter.invoke(loadedEntity, obj);
+  }
+
+
+  private void loadProxy() {
     if (this.loadedEntity == null) {
       log.debug("initializing lazy loading");
       if (session == null) {
@@ -91,7 +102,6 @@ public class BibernateByteBuddyProxyInterceptor<T> {
       }
       this.loadedEntity = load;
     }
-    return method.invoke(loadedEntity, args);
   }
 
   /**
@@ -116,7 +126,6 @@ public class BibernateByteBuddyProxyInterceptor<T> {
     if (this.loadedEntity == null) {
       this.loadedEntity = loadedEntity;
       //todo save snapshot
-
     }
   }
 

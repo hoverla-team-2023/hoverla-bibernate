@@ -86,6 +86,22 @@ class EntityProxyUtilsTest {
     Assertions.assertThrowsExactly(LazyLoadingException.class, proxy::getComment);
   }
 
+  @Test
+  public void whenUpdateProxy_verifySettersIntercepted() {
+    mockEntityMapping();
+    String comment = "Comment";
+    String newComment = "Update";
+
+    User proxy = EntityProxyUtils.createProxy(session, new EntityKey<>(User.class, 1L));
+    User user = User.builder().id(5L).name("Test").comment(comment).build();
+
+    EntityProxyUtils.initializeProxy(proxy, user);
+    assertEquals(comment, proxy.getComment());
+
+    proxy.setComment(newComment);
+    assertEquals(newComment, proxy.getComment());
+  }
+
   private void mockEntityMapping() {
     EntityMapping entityMapping = mock(EntityMapping.class);
     doReturn(entityMapping).when(session).getEntityMapping(User.class);
