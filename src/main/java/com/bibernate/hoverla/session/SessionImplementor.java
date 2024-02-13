@@ -95,7 +95,10 @@ public interface SessionImplementor extends Session {
 
     return new EntityDetails(entityMapping, entityKey, isProxy);
   }
-  //todo implement clear session caches
+
+  /**
+   * Invalidates caches associated with the current session.
+   */
   void invalidateCaches();
 
   Connection getConnection();

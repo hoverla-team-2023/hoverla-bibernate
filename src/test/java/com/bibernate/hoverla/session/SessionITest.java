@@ -17,6 +17,7 @@ import com.bibernate.hoverla.annotations.ManyToOne;
 import com.bibernate.hoverla.annotations.OneToMany;
 import com.bibernate.hoverla.annotations.SequenceGeneratedValue;
 import com.bibernate.hoverla.annotations.Table;
+import com.bibernate.hoverla.exceptions.LazyLoadingException;
 import com.bibernate.hoverla.jdbc.PostgresSqlTestExtension;
 import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProviderImpl;
 import com.bibernate.hoverla.metamodel.Metamodel;
@@ -31,6 +32,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SessionITest {
@@ -40,7 +42,7 @@ class SessionITest {
 
   private SessionFactory sessionFactory;
 
-  @Order(5)
+  @Order(10)
   @Test
   void test() {
     MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
@@ -54,7 +56,33 @@ class SessionITest {
 
   }
 
-  @Order(10)
+  @Order(20)
+  @Test
+  void whenTryingToInitializeCollectionAftersSessionIsClosed_thenLazyLoadingException() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class, TestComment.class);
+    this.sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    TestComment testComment = sessionFactory.fromSession(session -> session.find(TestComment.class, 1L));
+
+    assertThrows(LazyLoadingException.class, () -> testComment.getTestEntities().size());
+
+  }
+
+  @Order(30)
+  @Test
+  void whenTryingToInitializeEntityAftersSessionIsClosed_thenLazyLoadingException() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class, TestComment.class);
+    this.sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    TestComment testComment = sessionFactory.fromSession(session -> session.getReference(TestComment.class, 1L));
+
+    assertThrows(LazyLoadingException.class, () -> testComment.getComment());
+
+  }
+
+  @Order(40)
   @Test
   void whenRemove_verifyEntityIsRemoved() {
     MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
@@ -71,7 +99,7 @@ class SessionITest {
     Assertions.assertNull(testEntity);
   }
 
-  @Order(20)
+  @Order(50)
   @Test
   void whenPersistWithSequenceStrategy_verifyTheIdIsPresent() {
     MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
@@ -91,7 +119,7 @@ class SessionITest {
     Assertions.assertNotNull(persist.getId());
   }
 
-  @Order(30)
+  @Order(60)
   @Test
   void whenPersistWithIdentityStrategy_verifyTheIdIsPresent() {
     MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());

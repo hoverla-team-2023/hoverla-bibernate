@@ -34,7 +34,7 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   private Transaction currentTransaction;
 
-  private boolean isClosed = true;
+  private boolean isClosed = false;
 
   @SneakyThrows //todo use properly connection
   public SessionImpl(SessionFactoryImplementor sessionFactoryImplementor) {
@@ -43,6 +43,7 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   @Override
   public <T> T find(Class<T> entityClass, Object id) {
+    checkIfOpenSession();
     ensureEntityClassIsRegistered(entityClass);
 
     EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
@@ -57,12 +58,14 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   @Override
   public <T> Query<T> createQuery(String criteria, Class<T> entityClass) {
+    checkIfOpenSession();
     ensureEntityClassIsRegistered(entityClass);
     return new QueryImpl<>(this, criteria, entityClass);
   }
 
   @Override
   public <T> void persist(T entity) {
+    checkIfOpenSession();
     verifyIsNotProxy(entity);
 
     var entityMapping = getEntityMapping(entity.getClass());
@@ -84,6 +87,7 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   @Override
   public <T> T getReference(Class<T> entityClass, Object id) {
+    checkIfOpenSession();
     getEntityMapping(entityClass);
     EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
 
@@ -96,16 +100,20 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   @Override
   public <T> T merge(T entity) {
+    checkIfOpenSession();
     throw new NotImplementedException();
   }
 
   @Override
   public void detach(Object entity) {
+    checkIfOpenSession();
+
     throw new NotImplementedException();
   }
 
   @Override
   public void remove(Object entity) {
+    checkIfOpenSession();
     EntityDetails entityDetails = getEntityDetails(entity);
 
     EntityEntry entityEntry = persistenceContext.getEntityEntry(entityDetails.entityKey());
@@ -125,6 +133,7 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   @Override
   public void flush() {
+    checkIfOpenSession();
     updateEntitiesIfDirty();
     actionQueue.executeActions();
   }
@@ -132,26 +141,33 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
   @Override
   @SneakyThrows
   public void close() {
-    //todo implement it properly
+    checkIfOpenSession();
     invalidateCaches();
     if (currentConnection != null) {
       currentConnection.close();
     }
+    this.isClosed = true;
   }
 
-  //todo implement clear session caches
+
+  /**
+   * Invalidates caches associated with the current session.
+   */
   @Override
   public void invalidateCaches() {
-
+    checkIfOpenSession();
+    this.persistenceContext.invalidateCache();
   }
 
   @Override
   public Connection getConnection() {
+    checkIfOpenSession();
     return currentConnection;
   }
 
   @Override
   public Transaction getTransaction() {
+    checkIfOpenSession();
     if (currentTransaction != null && currentTransaction.isActive()) {
       return currentTransaction;
     }
@@ -213,6 +229,12 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     for (Object entity : dirtyEntities) {
       log.debug("Updating the dirty entity: {}", getEntityDetails(entity).entityKey());
       actionQueue.addAction(new UpdateAction(entity, entityDaoService));
+    }
+  }
+
+  private void checkIfOpenSession() {
+    if (isClosed) {
+      throw new BibernateException("Current session is closed");
     }
   }
 
