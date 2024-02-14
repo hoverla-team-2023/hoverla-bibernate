@@ -2,6 +2,7 @@ package com.bibernate.hoverla.session.cache;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -10,6 +11,7 @@ import com.bibernate.hoverla.session.LockMode;
 import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.dirtycheck.DirtyCheckService;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
+import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +55,25 @@ public class PersistenceContext {
 
   public void manageCollection(CollectionKey<?> collectionKey, PersistenceLazyList<?> collection) {
     collectionsMap.put(collectionKey, collection);
+  }
+
+  public void invalidateCache() {
+    unlinkSession();
+
+    this.collectionsMap.clear();
+    this.entityKeyEntityEntryMap.clear();
+
+  }
+
+  private void unlinkSession() {
+    entityKeyEntityEntryMap.values().stream()
+      .map(EntityEntry::getEntity)
+      .map(EntityProxyUtils::getProxyInterceptor)
+      .filter(Objects::nonNull).forEach(
+        BibernateByteBuddyProxyInterceptor::unlinkSession);
+
+    collectionsMap.values()
+      .forEach(PersistenceLazyList::unlinkSession);
   }
 
   private EntityEntry putNewEntityEntry(EntityKey<?> entityKey, Supplier<Object> getEntityOrProxyFunction) {
