@@ -1,7 +1,6 @@
 package com.bibernate.hoverla.utils.proxy;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -89,8 +88,7 @@ public class BibernateByteBuddyProxyInterceptor<T> {
     setter.invoke(loadedEntity, obj);
   }
 
-
-  private void loadProxy() {
+  public void loadProxy() {
     if (this.loadedEntity == null) {
       log.debug("initializing lazy loading");
       if (session == null) {

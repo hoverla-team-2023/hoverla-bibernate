@@ -1,16 +1,16 @@
 package com.bibernate.hoverla.session;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
-
-import org.apache.commons.lang3.NotImplementedException;
 
 import com.bibernate.hoverla.action.DeleteAction;
 import com.bibernate.hoverla.action.IdentityInsertAction;
 import com.bibernate.hoverla.action.InsertAction;
 import com.bibernate.hoverla.action.UpdateAction;
 import com.bibernate.hoverla.exceptions.BibernateException;
+import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.exceptions.PersistOperationException;
 import com.bibernate.hoverla.generator.Generator;
 import com.bibernate.hoverla.metamodel.FieldMapping;
@@ -26,7 +26,6 @@ import com.bibernate.hoverla.session.transaction.TransactionImpl;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
 import com.bibernate.hoverla.utils.EntityUtils;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -36,7 +35,6 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   private boolean isClosed = false;
 
-  @SneakyThrows //todo use properly connection
   public SessionImpl(SessionFactoryImplementor sessionFactoryImplementor) {
     super(sessionFactoryImplementor);
   }
@@ -47,13 +45,7 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     ensureEntityClassIsRegistered(entityClass);
 
     EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
-    log.info("Finding entity with entity key: {}", entityKey);
-
-    return Optional.ofNullable(persistenceContext.manageEntity(entityKey, () -> entityDaoService.load(entityKey),
-                                                               entityEntry -> {}))
-      .map(EntityEntry::getEntity)
-      .map(entityClass::cast)
-      .orElse(null);
+    return find(entityKey);
   }
 
   @Override
@@ -101,20 +93,33 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
   @Override
   public <T> T merge(T entity) {
     checkIfOpenSession();
-    throw new NotImplementedException();
+    T detachedEntity = EntityProxyUtils.unProxyAndInitialize(entity);
+
+    EntityDetails<T> entityDetails = getEntityDetails(entity);
+
+    T managedEntity = find(entityDetails.entityKey());
+
+    if (managedEntity == null) {
+      throw new BibernateException("Failed to merge entity %s, use persist instead: ".formatted(entityDetails.entityKey()));
+    }
+
+    updateFields(managedEntity, entityDetails, detachedEntity);
+
+    return managedEntity;
   }
 
   @Override
   public void detach(Object entity) {
     checkIfOpenSession();
 
-    throw new NotImplementedException();
+    EntityDetails<?> entityDetails = getEntityDetails(entity);
+    persistenceContext.removeEntity(entityDetails.entityKey());
   }
 
   @Override
   public void remove(Object entity) {
     checkIfOpenSession();
-    EntityDetails entityDetails = getEntityDetails(entity);
+    EntityDetails<?> entityDetails = getEntityDetails(entity);
 
     EntityEntry entityEntry = persistenceContext.getEntityEntry(entityDetails.entityKey());
 
@@ -139,16 +144,12 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
   }
 
   @Override
-  @SneakyThrows
   public void close() {
     checkIfOpenSession();
     invalidateCaches();
-    if (currentConnection != null) {
-      currentConnection.close();
-    }
+    closeConnection();
     this.isClosed = true;
   }
-
 
   /**
    * Invalidates caches associated with the current session.
@@ -173,6 +174,25 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     }
     this.currentTransaction = new TransactionImpl(this);
     return currentTransaction;
+  }
+
+  private <T> T find(EntityKey<T> entityKey) {
+    log.info("Finding entity with entity key: {}", entityKey);
+
+    return Optional.ofNullable(persistenceContext.manageEntity(entityKey, () -> entityDaoService.load(entityKey),
+                                                               entityEntry -> {}))
+      .map(EntityEntry::getEntity)
+      .map(entityKey.entityType()::cast)
+      .orElse(null);
+  }
+
+  private <T> void updateFields(T managedEntity, EntityDetails entityDetails, T detachedEntity) {
+    T managedEntityUnProxied = EntityProxyUtils.unProxyAndInitialize(managedEntity);
+
+    for (FieldMapping<?> fieldMapping : entityDetails.entityMapping().getFieldMappings(a -> !a.isOneToMany())) {
+      Object fieldValue = EntityUtils.getFieldValue(fieldMapping.getFieldName(), detachedEntity);
+      EntityUtils.setFieldValue(fieldMapping.getFieldName(), managedEntityUnProxied, fieldValue);
+    }
   }
 
   private boolean isIdentityGenerated(FieldMapping<?> primaryKeyMapping) {
@@ -216,6 +236,16 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   private <T> boolean validateEntityClass(Class<T> entityClass) {
     return !sessionFactory.getMetamodel().getEntityMappingMap().containsKey(entityClass);
+  }
+
+  private void closeConnection() {
+    if (currentConnection != null) {
+      try {
+        currentConnection.close();
+      } catch (SQLException exc) {
+        throw new BibernateSqlException("Failed to close connections", exc);
+      }
+    }
   }
 
   /**
