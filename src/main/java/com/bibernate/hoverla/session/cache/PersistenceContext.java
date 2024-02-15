@@ -115,7 +115,15 @@ public class PersistenceContext {
     collectionsMap.values()
       .forEach(PersistenceLazyList::unlinkSession);
   }
-
+  /**
+   * This method creates a new EntityEntry for the given entityKey and entity.
+   * If the entity is null, it removes the entityKey from the map and returns null.
+   * Otherwise, it sets the entity and snapshot for the EntityEntry and returns the EntityEntry.
+   *
+   * @param entityKey The key of the entity to be added.
+   * @param getEntityOrProxyFunction A function that returns the entity or a proxy for the entity.
+   * @return The created EntityEntry if the entity is not null, otherwise null.
+   */
   private EntityEntry putNewEntityEntry(EntityKey<?> entityKey, Supplier<Object> getEntityOrProxyFunction) {
     EntityEntry entityEntry = EntityEntry.builder()
       .entityState(EntityState.MANAGED)
@@ -134,7 +142,15 @@ public class PersistenceContext {
     entityEntry.setSnapshot(dirtyCheckService.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entity));
     return entityEntry;
   }
-
+  /**
+   * This method initializes a proxy for an entity if it is not already initialized.
+   * If the entity entry's entity is an uninitialized proxy, it attempts to get the actual entity
+   * or a proxy from the provided supplier. If the obtained entity is not a proxy, it initializes
+   * the proxy with the actual entity.
+   *
+   * @param getEntityOrProxyFunction A function that returns the actual entity or a proxy for the entity.
+   * @param entityEntry The EntityEntry that contains the entity or proxy.
+   */
   private void initialyProxyIfNeeded(Supplier<Object> getEntityOrProxyFunction, EntityEntry entityEntry) {
     if (EntityProxyUtils.isUnitializedProxy(entityEntry.getEntity())) {
       Object entity = getEntityOrProxyFunction.get();

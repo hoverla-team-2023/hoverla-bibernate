@@ -1,4 +1,6 @@
-# Hoverla Bibernate
+![logo.png](assets/logo.png)
+
+# Hoverla Bibernate - The Relentless Pursuit of Perfection
 
 Bibernate is an advanced ORM (Object-Relational Mapping) framework designed to facilitate seamless data interaction between Java applications and relational databases. This document provides detailed guidance on configuring Bibernate, a lightweight and high-performance JDBC connection pool.
 

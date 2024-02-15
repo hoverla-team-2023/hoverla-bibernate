@@ -27,13 +27,22 @@ import static java.util.function.Predicate.not;
 
 import static org.apache.commons.lang3.ObjectUtils.allNull;
 import static org.apache.commons.lang3.ObjectUtils.anyNull;
-
+/**
+ * Implementation of the {@link DirtyCheckService} interface. This class is responsible for
+ * detecting and managing dirty entities and their fields. It provides methods to find dirty
+ * entities and to get the updated fields of a given entity.
+ */
 @Slf4j
 @RequiredArgsConstructor
 public class DirtyCheckServiceImpl implements DirtyCheckService {
 
   private final SessionImplementor sessionImplementor;
-
+  /**
+   * Finds all dirty entities in the persistence context. A dirty entity is an entity that
+   * is managed, not read-only, and has changes compared to its snapshot.
+   *
+   * @return A list of dirty entities.
+   */
   @Override
   public List<Object> findDirtyEntities() {
     Map<EntityKey<?>, EntityEntry> persistenceContextMap = sessionImplementor.getPersistenceContext().getEntityKeyEntityEntryMap();
@@ -45,7 +54,14 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
       .map(entry -> entry.getValue().getEntity())
       .toList();
   }
-
+  /**
+   * Retrieves the updated fields of a given entity. An updated field is a field that has
+   * a different value compared to its snapshot.
+   *
+   * @param <T>    The type of the entity.
+   * @param entity The entity to check for updated fields.
+   * @return A list of dirty field mappings representing the updated fields of the entity.
+   */
   @Override
   public <T> List<DirtyFieldMapping<Object>> getUpdatedFields(T entity) {
     var entityDetails = sessionImplementor.getEntityDetails(entity);
@@ -76,7 +92,13 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
     }
     return dirtyFieldMappings;
   }
-
+  /**
+   * Creates a snapshot of the entity's field values based on the entity mapping.
+   *
+   * @param entityMapping The entity mapping to use for field extraction.
+   * @param entity        The entity to create a snapshot for.
+   * @return An array of field values representing the snapshot of the entity.
+   */
   public Object[] getSnapshot(EntityMapping entityMapping, Object entity) {
     Object unProxied = EntityProxyUtils.unProxy(entity);
     if (unProxied == null) {

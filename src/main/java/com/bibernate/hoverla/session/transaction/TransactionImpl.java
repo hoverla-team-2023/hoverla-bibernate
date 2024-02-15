@@ -6,6 +6,14 @@ import com.bibernate.hoverla.exceptions.BibernateSqlException;
 import com.bibernate.hoverla.exceptions.BibernateTransactionException;
 import com.bibernate.hoverla.session.SessionImplementor;
 
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Implementation of the {@link Transaction} interface. This class is responsible for
+ * managing transactions within a session. It provides methods to begin, commit, and
+ * rollback transactions, as well as checking the status of the transaction.
+ */
+@Slf4j
 public class TransactionImpl implements Transaction {
 
   private final SessionImplementor sessionImplementor;
@@ -15,7 +23,13 @@ public class TransactionImpl implements Transaction {
   public TransactionImpl(SessionImplementor sessionImplementor) {
     this.sessionImplementor = sessionImplementor;
   }
-
+  /**
+   * Begins a new transaction.
+   *
+   * @return The current TransactionImpl instance.
+   * @throws BibernateTransactionException If a transaction is already active.
+   * @throws BibernateSqlException         If an SQLException occurs during transaction start.
+   */
   @Override
   public Transaction beginTransaction() {
     try {
@@ -29,7 +43,13 @@ public class TransactionImpl implements Transaction {
     }
     return this;
   }
-
+  /**
+   * Commits the current transaction.
+   *
+   * @return The current TransactionImpl instance.
+   * @throws BibernateTransactionException If no transaction is active.
+   * @throws BibernateSqlException         If an SQLException occurs during commit.
+   */
   @Override
   public Transaction commit() {
     try {
@@ -44,7 +64,13 @@ public class TransactionImpl implements Transaction {
     }
     return this;
   }
-
+  /**
+   * Rolls back the current transaction.
+   *
+   * @return The current TransactionImpl instance.
+   * @throws BibernateTransactionException If no transaction is active.
+   * @throws BibernateSqlException         If an SQLException occurs during rollback.
+   */
   @Override
   public Transaction rollback() {
     try {
@@ -59,7 +85,11 @@ public class TransactionImpl implements Transaction {
     }
     return this;
   }
-
+  /**
+   * Checks if the transaction is active.
+   *
+   * @return True if the transaction is active, false otherwise.
+   */
   @Override
   public boolean isActive() {
     return this.isActive;
