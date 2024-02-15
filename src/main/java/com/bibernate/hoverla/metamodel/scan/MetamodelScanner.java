@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.reflections.Reflections;
 
@@ -79,6 +80,18 @@ public class MetamodelScanner {
       .collect(toMap(identity(), this::scanEntity));
 
     return new Metamodel(entityMappings);
+  }
+
+  /**
+   * Construct a new {@link Metamodel} from the provided classes
+   */
+  public Metamodel scanEntities(Collection<Class<?>> entityClasses) {
+    if (CollectionUtils.isEmpty(entityClasses)) {
+      return new Metamodel(Map.of());
+    }
+
+    return new Metamodel(entityClasses.stream()
+                           .collect(toMap(identity(), this::scanEntity)));
   }
 
   private EntityMapping scanEntity(Class<?> entityClass) {
