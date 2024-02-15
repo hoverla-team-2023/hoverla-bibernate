@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
+
 import com.bibernate.hoverla.exceptions.BibernateException;
 import com.bibernate.hoverla.exceptions.OptimisticLockException;
 import com.bibernate.hoverla.exceptions.PersistOperationException;
@@ -38,8 +41,12 @@ import static com.bibernate.hoverla.jdbc.JdbcParameterBinding.bindParameter;
 @RequiredArgsConstructor
 public class EntityDaoService {
 
+  private static final String FOR_SHARE = "FOR SHARE";
+  private static final String FOR_UPDATE = "FOR UPDATE";
+  private static final String NONE = "";
+
   private static final String DELETE_FROM_TABLE_BY_ID = "DELETE FROM %s WHERE %s = ?;";
-  private static final String SELECT_FROM_TABLE_BY_COlUMN = "SELECT %s FROM %s WHERE %s = ?;";
+  private static final String SELECT_FROM_TABLE_BY_COLUMN = "SELECT %s FROM %s WHERE %s = ? %s;";
   private static final String INSERT_INTO_TABLE = "INSERT INTO %s (%s) VALUES (%s);";
   private static final String UPDATE_TABLE_BY_ID = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String UPDATE_TABLE_WITH_OPTIMISTIC_LOCK = "UPDATE %s SET %s, %s = ? WHERE %s = ? AND %s = ?;";
@@ -96,20 +103,22 @@ public class EntityDaoService {
    * If multiple entities are found for the given entity key, an exception is thrown.
    * </p>
    *
-   * @param entityKey the entity key representing the entity to load.
    * @param <T>       the type of the entity.
+   * @param entityKey the entity key representing the entity to load.
    *
    * @return the loaded entity, or null if no entity is found.
    */
-  public <T> T load(EntityKey<T> entityKey) {
+  public <T> T load(EntityKey<T> entityKey, LockMode lockMode) {
 
     EntityMapping entityMapping = session.getEntityMapping(entityKey.entityType());
 
     FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
 
-    String selectStatement = SELECT_FROM_TABLE_BY_COlUMN.formatted(entityMapping.getColumnNames(),
+    String selectStatement = SELECT_FROM_TABLE_BY_COLUMN.formatted(entityMapping.getColumnNames(),
                                                                    entityMapping.getTableName(),
-                                                                   primaryKeyMapping.getColumnName());
+                                                                   primaryKeyMapping.getColumnName(),
+                                                                   StringUtils.prependIfMissing(getLockModeSqlAppend(lockMode), " ")
+    );
 
     List<T> results = session.getJdbcExecutor()
       .executeSelectQuery(selectStatement,
@@ -148,9 +157,10 @@ public class EntityDaoService {
     EntityMapping entityMapping = session.getEntityMapping(entityType);
     FieldMapping<?> joinColumn = entityMapping.getFieldMapping(oneToManyMapping.getMappedBy());
 
-    String selectStatement = SELECT_FROM_TABLE_BY_COlUMN.formatted(entityMapping.getColumnNames(),
+    String selectStatement = SELECT_FROM_TABLE_BY_COLUMN.formatted(entityMapping.getColumnNames(),
                                                                    entityMapping.getTableName(),
-                                                                   joinColumn.getColumnName());
+                                                                   joinColumn.getColumnName(),
+                                                                   Strings.EMPTY);
 
     JdbcParameterBinding<?>[] bindValues = { bindParameter(collectionKey.id(),
                                                            joinColumn.getJdbcType()) };
@@ -313,6 +323,18 @@ public class EntityDaoService {
     }
 
     log.debug("Entity with id {} was updated in table {}, updated rows: {}", entityKey, tableName, updatedRows);
+  }
+
+  public String getLockModeSqlAppend(LockMode lockModeEnum) {
+
+    switch (lockModeEnum) {
+      case FOR_SHARE:
+        return FOR_SHARE;
+      case FOR_UPDATE:
+        return FOR_UPDATE;
+      default:
+        return NONE;
+    }
   }
 
   private <T> void initOptimisticLock(T entity, FieldMapping<?> optimisticLock) {

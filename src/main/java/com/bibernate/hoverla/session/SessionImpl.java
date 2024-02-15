@@ -41,11 +41,16 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
   @Override
   public <T> T find(Class<T> entityClass, Object id) {
+    return find(entityClass, id, LockMode.NONE);
+  }
+
+  @Override
+  public <T> T find(Class<T> entityClass, Object id, LockMode lockMode) {
     checkIfOpenSession();
     ensureEntityClassIsRegistered(entityClass);
 
     EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
-    return find(entityKey);
+    return find(entityKey, lockMode);
   }
 
   @Override
@@ -177,9 +182,13 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
   }
 
   private <T> T find(EntityKey<T> entityKey) {
+    return find(entityKey, LockMode.NONE);
+  }
+
+  private <T> T find(EntityKey<T> entityKey, LockMode lockMode) {
     log.info("Finding entity with entity key: {}", entityKey);
 
-    return Optional.ofNullable(persistenceContext.manageEntity(entityKey, () -> entityDaoService.load(entityKey),
+    return Optional.ofNullable(persistenceContext.manageEntity(entityKey, () -> entityDaoService.load(entityKey, lockMode),
                                                                entityEntry -> {}))
       .map(EntityEntry::getEntity)
       .map(entityKey.entityType()::cast)

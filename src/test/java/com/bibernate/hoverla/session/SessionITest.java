@@ -44,7 +44,7 @@ class SessionITest {
 
   @Order(10)
   @Test
-  void test() {
+  void testLazyLoadingOfCollection() {
     MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
     Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class, TestComment.class);
     this.sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
@@ -52,6 +52,32 @@ class SessionITest {
     sessionFactory.inTransaction(session -> {
       TestComment testEntity = session.find(TestComment.class, 1L);
       assertEquals(2, testEntity.testEntities.size());
+    });
+
+  }
+
+  @Order(6)
+  @Test
+  void testPessimisticForShareLock() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class, TestComment.class);
+    this.sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    sessionFactory.inTransaction(session -> {
+      session.find(TestComment.class, 1L, LockMode.FOR_SHARE);
+    });
+
+  }
+
+  @Order(8)
+  @Test
+  void testPessimisticForUpdateLock() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class, TestComment.class);
+    this.sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    sessionFactory.inTransaction(session -> {
+      session.find(TestComment.class, 1L, LockMode.FOR_UPDATE);
     });
 
   }
