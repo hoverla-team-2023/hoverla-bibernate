@@ -115,4 +115,15 @@ public class EntityProxyUtils {
     return (T) proxyInterceptor.getLoadedEntity();
   }
 
+  public static <T> T unProxyAndInitialize(T proxy) {
+    var proxyInterceptor = EntityProxyUtils.getProxyInterceptor(proxy);
+    if (proxyInterceptor == null) {
+      return proxy;
+    }
+
+    proxyInterceptor.loadProxy();
+
+    return (T) proxyInterceptor.getLoadedEntity();
+  }
+
 }

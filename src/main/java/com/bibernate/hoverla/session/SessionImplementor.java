@@ -84,7 +84,7 @@ public interface SessionImplementor extends Session {
     return entityMapping;
   }
 
-  default <T> EntityDetails getEntityDetails(T entity) {
+  default <T> EntityDetails<T> getEntityDetails(T entity) {
     BibernateByteBuddyProxyInterceptor<T> proxyInterceptor = getProxyInterceptor(entity);
     boolean isProxy = proxyInterceptor != null;
     Class<?> entityClass = isProxy ? proxyInterceptor.getEntityClass() : entity.getClass();
@@ -93,7 +93,7 @@ public interface SessionImplementor extends Session {
     EntityKey<T> entityKey = isProxy ? new EntityKey<>(proxyInterceptor.getEntityClass(), proxyInterceptor.getEntityId())
                                      : EntityUtils.getEntityKey((Class<T>) entity.getClass(), entity, primaryKeyMapping.getFieldName());
 
-    return new EntityDetails(entityMapping, entityKey, isProxy);
+    return new EntityDetails<>(entityMapping, entityKey, isProxy);
   }
 
   /**

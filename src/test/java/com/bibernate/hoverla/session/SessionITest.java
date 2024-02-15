@@ -56,6 +56,25 @@ class SessionITest {
 
   }
 
+  @Order(15)
+  @Test
+  void whenMergeDetachedEntity_thenEntityMerged() {
+    String commentText = "newComment";
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntity.class, TestComment.class);
+    this.sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    TestComment testComment = sessionFactory.fromTransaction(session -> session.find(TestComment.class, 1L));
+    testComment.setComment(commentText);
+
+    sessionFactory.inTransaction(session -> {
+      session.merge(testComment);
+    });
+
+    TestComment newComment = sessionFactory.fromTransaction(session -> session.find(TestComment.class, 1L));
+    assertEquals(commentText, newComment.getComment());
+  }
+
   @Order(20)
   @Test
   void whenTryingToInitializeCollectionAftersSessionIsClosed_thenLazyLoadingException() {
@@ -80,6 +99,24 @@ class SessionITest {
 
     assertThrows(LazyLoadingException.class, () -> testComment.getComment());
 
+  }
+
+  @Order(35)
+  @Test
+  void whenRemoveAndDetach_verifyEntityIsNotRemoved() {
+    MetamodelScanner metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+    Metamodel metamodel = metamodelScanner.scanEntities(TestEntityIdentity.class, TestEntity.class, TestComment.class);
+    this.sessionFactory = new SessionFactoryImpl(DB.getDataSource(), metamodel);
+
+    sessionFactory.inTransaction(session -> {
+      TestEntity testEntity = session.find(TestEntity.class, 1L);
+      Assertions.assertNotNull(testEntity);
+      session.remove(testEntity);
+      session.detach(testEntity);
+    });
+
+    TestEntityIdentity testEntity = sessionFactory.fromTransaction(session -> session.find(TestEntityIdentity.class, 1L));
+    Assertions.assertNotNull(testEntity);
   }
 
   @Order(40)

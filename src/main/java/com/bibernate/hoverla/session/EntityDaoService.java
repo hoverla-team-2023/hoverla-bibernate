@@ -54,16 +54,20 @@ public class EntityDaoService {
       generatePlaceholders(insertableFields)
     );
 
-    if (!isIdentityGenerated(primaryKeyMapping)) {
-      int updatedRows = session.getJdbcExecutor().executeUpdate(insertStatement, parameterBindings);
-      verifyInsertOperation(updatedRows);
+    if (isIdentityGenerated(primaryKeyMapping)) {
+      Object generatedKey = session.getJdbcExecutor()
+        .executeUpdateAndReturnGeneratedKeys(insertStatement, parameterBindings, primaryKeyMapping.getJdbcType());
+
+      EntityUtils.setFieldValue(primaryKeyMapping.getFieldName(), entity, generatedKey);
       return;
     }
 
-    Object generatedKey = session.getJdbcExecutor()
-      .executeUpdateAndReturnGeneratedKeys(insertStatement, parameterBindings, primaryKeyMapping.getJdbcType());
+    if (isDetached(entity)) {
+      return;
+    }
 
-    EntityUtils.setFieldValue(primaryKeyMapping.getFieldName(), entity, generatedKey);
+    int updatedRows = session.getJdbcExecutor().executeUpdate(insertStatement, parameterBindings);
+    verifyInsertOperation(updatedRows);
   }
 
   private <T> void initOptimisticLock(T entity, FieldMapping<?> optimisticLock) {
@@ -111,9 +115,12 @@ public class EntityDaoService {
   }
 
   public <T> void update(T entity) {
-
     var entityDetails = session.getEntityDetails(entity);
     var entityKey = entityDetails.entityKey();
+
+    if (isDetached(entityKey)) {
+      return;
+    }
 
     log.debug("Updating entity: {}", entityKey);
 
@@ -212,8 +219,10 @@ public class EntityDaoService {
   }
 
   public <T> void delete(T entity) {
-
     EntityDetails entityDetails = session.getEntityDetails(entity);
+    if (isDetached(entityDetails.entityKey())) {
+      return;
+    }
 
     log.debug("Deleting entity: {}", entityDetails.entityKey());
 
@@ -313,6 +322,14 @@ public class EntityDaoService {
 
   private String generatePlaceholders(Collection<?> collection) {
     return String.join(", ", Collections.nCopies(collection.size(), "?"));
+  }
+
+  private <T> boolean isDetached(T entity) {
+    return isDetached(session.getEntityDetails(entity).entityKey());
+  }
+
+  private <T> boolean isDetached(EntityKey<T> entityKey) {
+    return session.getPersistenceContext().isDetached(entityKey);
   }
 
 }

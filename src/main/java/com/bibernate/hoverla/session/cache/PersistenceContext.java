@@ -65,6 +65,14 @@ public class PersistenceContext {
 
   }
 
+  public void removeEntity(EntityKey<?> entityKey) {
+    entityKeyEntityEntryMap.remove(entityKey);
+  }
+
+  public boolean isDetached(EntityKey<?> entityKey) {
+    return !entityKeyEntityEntryMap.containsKey(entityKey);
+  }
+
   private void unlinkSession() {
     entityKeyEntityEntryMap.values().stream()
       .map(EntityEntry::getEntity)
