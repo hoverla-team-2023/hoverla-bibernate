@@ -1,6 +1,12 @@
 package com.bibernate.hoverla.exceptions;
 
-public class BibernateBqlMissingParameterException extends BibernateException {
+/**
+ * Exception thrown when a required parameter is missing in Bibernate's BQL (Bibernate Query Language) operations.
+ * <p>
+ * Extends {@link BibernateBqlException}.
+ * </p>
+ */
+public class BibernateBqlMissingParameterException extends BibernateBqlException {
 
   public BibernateBqlMissingParameterException(String message) {
     super(message);

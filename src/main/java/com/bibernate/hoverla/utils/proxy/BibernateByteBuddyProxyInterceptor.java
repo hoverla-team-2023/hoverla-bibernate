@@ -15,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import net.bytebuddy.implementation.bind.annotation.SuperMethod;
-import net.bytebuddy.implementation.bind.annotation.This;
 
 /**
  * Represents an interceptor for BibernateByteBuddyProxy objects.
@@ -62,20 +60,16 @@ public class BibernateByteBuddyProxyInterceptor<T> {
   /**
    * Intercepts method calls on the proxy object.
    *
-   * @param self        The proxy object.
-   * @param method      The method being invoked.
-   * @param args        The arguments passed to the method.
-   * @param superMethod A callable that represents the original method call.
+   * @param method The method being invoked.
+   * @param args   The arguments passed to the method.
    *
    * @return The result of the method call.
    *
    * @throws Throwable If an error occurs during the method call.
    */
   @RuntimeType
-  public Object intercept(@This Object self,
-                          @Origin Method method,
-                          @AllArguments Object[] args,
-                          @SuperMethod Method superMethod) throws Throwable {
+  public Object intercept(@Origin Method method,
+                          @AllArguments Object[] args) throws Throwable {
     if (isIdGetter(method)) {
       return entityId;
     }
@@ -83,11 +77,22 @@ public class BibernateByteBuddyProxyInterceptor<T> {
     return method.invoke(loadedEntity, args);
   }
 
-  public void set(Object obj, @This Object self, @Origin Method setter) throws Throwable {
+  /**
+   * Sets the value of a property on the loaded entity using a setter method.
+   *
+   * @param object the value to set on the property.
+   * @param setter the setter method to invoke.
+   *
+   * @throws Throwable if an error occurs during the invocation of the setter method.
+   */
+  public void set(Object object, @Origin Method setter) throws Throwable {
     loadProxy();
-    setter.invoke(loadedEntity, obj);
+    setter.invoke(loadedEntity, object);
   }
 
+  /**
+   * Lazily loads the entity if not already loaded.
+   */
   public void loadProxy() {
     if (this.loadedEntity == null) {
       log.debug("initializing lazy loading");
@@ -123,6 +128,11 @@ public class BibernateByteBuddyProxyInterceptor<T> {
     this.session = null;
   }
 
+  /**
+   * Initializes the loaded entity if not already initialized.
+   *
+   * @param loadedEntity the loaded entity object.
+   */
   public void initializyIfEmpty(Object loadedEntity) {
     if (this.loadedEntity == null) {
       this.loadedEntity = loadedEntity;

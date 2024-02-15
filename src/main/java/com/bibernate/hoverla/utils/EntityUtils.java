@@ -144,18 +144,4 @@ public class EntityUtils {
     }
   }
 
-  public static String getColumnNames(EntityMapping entityMapping) {
-    return entityMapping.getFieldMappings(mapping -> !mapping.isOneToMany())
-      .stream()
-      .map(FieldMapping::getColumnName)
-      .collect(Collectors.joining(", "));
-  }
-
-  public static List<? extends BibernateJdbcType<?>> getJdbcTypes(EntityMapping entityMapping) {
-    return entityMapping.getFieldMappings(mapping -> !mapping.isOneToMany())
-      .stream()
-      .map(FieldMapping::getJdbcType)
-      .collect(Collectors.toList());
-  }
-
 }

@@ -1,6 +1,12 @@
 package com.bibernate.hoverla.exceptions;
 
-public class BibernateBqlInvalidParameterException extends BibernateException {
+/**
+ * Exception thrown when an invalid parameter is encountered in Bibernate's BQL (Bibernate Query Language) operations.
+ * <p>
+ * Extends {@link BibernateBqlException}.
+ * </p>
+ */
+public class BibernateBqlInvalidParameterException extends BibernateBqlException {
 
   public BibernateBqlInvalidParameterException(String message) {
     super(message);

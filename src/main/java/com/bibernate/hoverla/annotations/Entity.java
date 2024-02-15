@@ -5,8 +5,18 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Indicates that the annotated class is an entity.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Entity {
-    String name() default "";
+
+  /**
+   * The name of the entity.
+   *
+   * @return The name of the entity.
+   */
+  String name() default "";
+
 }

@@ -49,6 +49,7 @@ public class SequenceGeneratorImpl implements Generator {
    */
   @Override
   public Object generateNext(Connection connection) {
+    log.debug("Generating next value from sequence: {}, allocation size: {}...", sequenceName, allocationSize);
 
     if (!isInitialized) {
       synchronized (this) {
@@ -59,7 +60,6 @@ public class SequenceGeneratorImpl implements Generator {
           currentVal.set(firstAllocatedValue);
           isInitialized = true;
           return currentVal.getAndIncrement();
-
         }
       }
     }

@@ -5,13 +5,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
+import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
 
 import lombok.Getter;
 
 /**
  * Represents a single entity in the metamodel. It has information about the entity's related table name, column names, primary key, etc.
+ *
+ * <p>
+ * This class provides a mapping between entity fields and database columns, allowing access to metadata associated with the entity.
+ * </p>
  *
  * @see FieldMapping
  * @see Metamodel
@@ -19,10 +25,20 @@ import lombok.Getter;
 @Getter
 public class EntityMapping {
 
+  /**
+   * The class representing the entity.
+   */
   private final Class<?> entityClass;
+
+  /**
+   * The name of the table associated with the entity.
+   */
   private final String tableName;
 
-  //  Use LinkedHashMap to preserve column order.
+  /**
+   * A mapping between field names and their corresponding {@link FieldMapping}.
+   * Utilizes a {@link LinkedHashMap} to preserve the order of mappings.
+   */
   private final Map<String, FieldMapping<?>> fieldNameMappingMap = new LinkedHashMap<>();
 
   public EntityMapping(Class<?> entityClass) {
@@ -69,6 +85,20 @@ public class EntityMapping {
     return fieldNameMappingMap.values().stream()
       .filter(FieldMapping::isOptimisticLock)
       .findFirst();
+  }
+
+  public String getColumnNames() {
+    return getFieldMappings(mapping -> !mapping.isOneToMany())
+      .stream()
+      .map(FieldMapping::getColumnName)
+      .collect(Collectors.joining(", "));
+  }
+
+  public List<? extends BibernateJdbcType<?>> getJdbcTypes() {
+    return getFieldMappings(mapping -> !mapping.isOneToMany())
+      .stream()
+      .map(FieldMapping::getJdbcType)
+      .collect(Collectors.toList());
   }
 
 }
