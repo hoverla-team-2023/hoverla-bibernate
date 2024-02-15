@@ -93,7 +93,19 @@ public class MetamodelScanner {
     return new Metamodel(entityClasses.stream()
                            .collect(toMap(identity(), this::scanEntity)));
   }
-
+  /**
+   * Scans an entity class to create an EntityMapping object.
+   * This method resolves the table name, scans each field in the entity class,
+   * adds the field mappings to the EntityMapping, and validates the primary key
+   * and optimistic lock fields.
+   *
+   * @param entityClass The class of the entity to scan.
+   * @return The EntityMapping object created from the entity class.
+   * @throws InvalidEntityDeclarationException If the entity class has no primary key
+   *                                           or multiple primary keys defined, or
+   *                                           if the entity class has multiple optimistic
+   *                                           lock fields defined.
+   */
   private EntityMapping scanEntity(Class<?> entityClass) {
     var entityMapping = new EntityMapping(entityClass, resolveTableName(entityClass));
 
@@ -111,7 +123,14 @@ public class MetamodelScanner {
 
     return entityMapping;
   }
-
+  /**
+   * Validates that the entity class has exactly one primary key field defined.
+   *
+   * @param entityClass The class of the entity to validate.
+   * @param fieldMappings The collection of field mappings to check for primary keys.
+   * @throws InvalidEntityDeclarationException If the entity class has no primary key
+   *                                           or multiple primary keys defined.
+   */
   private void validatePrimaryKey(Class<?> entityClass, Collection<FieldMapping<?>> fieldMappings) {
     long primaryKeyFieldsCount = fieldMappings.stream()
       .filter(FieldMapping::isPrimaryKey)
@@ -131,7 +150,16 @@ public class MetamodelScanner {
       ));
     }
   }
-
+  /**
+   * Validates that the entity class has at most one optimistic lock field defined,
+   * and that the type of the field is Integer or Long.
+   *
+   * @param entityClass The class of the entity to validate.
+   * @param fieldMappings The collection of field mappings to check for optimistic locks.
+   * @throws InvalidEntityDeclarationException If the entity class has multiple optimistic
+   *                                           lock fields defined, or if the type of the
+   *                                           optimistic lock field is not Integer or Long.
+   */
   private void validateOptimisticLock(Class<?> entityClass, Collection<FieldMapping<?>> fieldMappings) {
     var optimisticLockFields = fieldMappings.stream()
       .filter(FieldMapping::isOptimisticLock)
@@ -149,7 +177,13 @@ public class MetamodelScanner {
       validateOptimisticLockType(entityClass, optimisticLock);
     }
   }
-
+  /**
+   * Validates that the type of the optimistic lock field is Integer or Long.
+   *
+   * @param entityClass The class of the entity containing the optimistic lock field.
+   * @param fieldMapping The field mapping of the optimistic lock field.
+   * @throws InvalidEntityDeclarationException If the type of the optimistic lock field is not Integer or Long.
+   */
   private void validateOptimisticLockType(Class<?> entityClass, FieldMapping<?> fieldMapping) {
     Class<?> fieldType = fieldMapping.getFieldType();
     if (isPrimitiveOrWrapper(fieldType)) {
@@ -164,13 +198,27 @@ public class MetamodelScanner {
       entityClass.getName(), fieldMapping.getFieldName(), fieldType
     ));
   }
-
+  /**
+   * Resolves the table name for the entity class.
+   * If the entity class is annotated with @Table, the table name is taken from the annotation.
+   * Otherwise, the table name is converted from the entity class name to snake case.
+   *
+   * @param entityClass The class of the entity to resolve the table name for.
+   * @return The resolved table name for the entity class.
+   */
   private String resolveTableName(Class<?> entityClass) {
     return Optional.ofNullable(entityClass.getAnnotation(Table.class))
       .map(Table::value)
       .orElseGet(() -> toSnakeCase(entityClass.getSimpleName()));
   }
-
+  /**
+   * Scans a field to create a FieldMapping object.
+   * This method resolves various properties of the field and uses them to build a FieldMapping.
+   *
+   * @param field The field to scan.
+   * @param <T> The type of the field.
+   * @return The FieldMapping object created from the field.
+   */
   private <T> FieldMapping<T> scanField(Field field) {
     FieldMapping<T> fieldMapping = FieldMapping.<T>builder()
       .columnName(resolveColumnName(field))
@@ -190,7 +238,14 @@ public class MetamodelScanner {
       .build();
     return fieldMapping;
   }
-
+  /**
+   * Resolves the OneToMany mapping for a field.
+   * If the field is not annotated with @OneToMany, this method returns null.
+   * Otherwise, it builds a OneToManyMapping object with the mappedBy attribute and the collection type.
+   *
+   * @param field The field to resolve the OneToMany mapping for.
+   * @return The OneToManyMapping object for the field, or null if the field is not annotated with @OneToMany.
+   */
   private OneToManyMapping resolveOneToManyMapping(Field field) {
     OneToMany annotation = field.getAnnotation(OneToMany.class);
     if (annotation == null) {
@@ -205,7 +260,15 @@ public class MetamodelScanner {
       .collectionType(relatedEntityType)
       .build();
   }
-
+  /**
+   * Resolves the ID generation strategy for a field.
+   * If the field is not annotated with @Id, this method returns null.
+   * If the field is annotated with @SequenceGeneratedValue, the sequence generation strategy is returned.
+   * If the field is annotated with @IdentityGeneratedValue, the identity generation strategy is returned.
+   *
+   * @param field The field to resolve the ID generation strategy for.
+   * @return The IdGeneratorStrategy for the field, or null if the field is not annotated with @Id.
+   */
   private IdGeneratorStrategy resolveIdGenerationStrategy(Field field) {
     if (!field.isAnnotationPresent(Id.class)) {
       return null;
