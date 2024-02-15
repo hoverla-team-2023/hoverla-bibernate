@@ -6,6 +6,8 @@ import com.bibernate.hoverla.configuration.config.CommonConfig;
 import com.bibernate.hoverla.connectionpool.ConnectionPool;
 import com.bibernate.hoverla.exceptions.ConfigurationException;
 import com.bibernate.hoverla.jdbc.types.provider.JdbcTypeProviderImpl;
+import com.bibernate.hoverla.metamodel.MetamodelPostValidatorImpl;
+import com.bibernate.hoverla.metamodel.MetamodelValidator;
 import com.bibernate.hoverla.metamodel.scan.MetamodelScanner;
 import com.bibernate.hoverla.session.SessionFactory;
 import com.bibernate.hoverla.session.SessionFactoryImpl;
@@ -49,15 +51,22 @@ public class Configuration {
   private SessionFactory buildSessionFactory() {
     try {
       var metamodelScanner = new MetamodelScanner(new JdbcTypeProviderImpl());
+      List<MetamodelValidator> validators = List.of(new MetamodelPostValidatorImpl());
+
       log.debug("Start scanning packageName: " + packageName);
-      var metamodel = metamodelScanner.scanPackage(packageName);
+      var metamodel = metamodelScanner.scanPackage(packageName)
+        .merge(metamodelScanner.scanEntities(annotatedClasses));
+      validators.forEach(validator -> validator.validate(metamodel));
       log.debug("Metamodel scanner created successfully: " + metamodel);
+
       var dataSource = ConnectionPool.getDataSource(this);
       log.debug("DataSource created successfully: " + dataSource);
+
       return new SessionFactoryImpl(dataSource, metamodel);
     } catch (Exception e) {
       log.error("Failed to create session factory: " + e.getMessage());
       throw new ConfigurationException("Failed to create session factory: ", e);
     }
   }
+
 }
