@@ -1,6 +1,10 @@
 package com.bibernate.hoverla.exceptions;
 
+/**
+ * Exception thrown when an error occurs in the configuration of Bibernate.
+ */
 public class ConfigurationException extends BibernateException {
+
   /**
    * Constructs a ConfigurationException with the specified detail message.
    *
@@ -20,4 +24,5 @@ public class ConfigurationException extends BibernateException {
   public ConfigurationException(String message, Throwable cause) {
     super(message, cause);
   }
+
 }

@@ -6,11 +6,14 @@ import com.bibernate.hoverla.metamodel.Metamodel;
 
 import lombok.Getter;
 
+/**
+ * Implementation of the {@link SessionFactory} and {@link SessionFactoryImplementor} interfaces.
+ */
 @Getter
 public class SessionFactoryImpl implements SessionFactory, SessionFactoryImplementor {
 
-  private DataSource dataSource;
-  private Metamodel metamodel;
+  private final DataSource dataSource;
+  private final Metamodel metamodel;
 
   public SessionFactoryImpl(DataSource dataSource, Metamodel metamodel) {
     this.dataSource = dataSource;

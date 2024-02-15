@@ -4,8 +4,28 @@ import com.bibernate.hoverla.exceptions.BibernateBqlException;
 import com.bibernate.hoverla.query.Query;
 import com.bibernate.hoverla.session.transaction.Transaction;
 
+/**
+ * The Session interface in Hibernate is the main way to interact with the database. It manages entities (data objects) within a transaction, allowing you to save, update, or delete them. Here's what you need to know:
+ * <p/>
+ * - Entities can be new (transient), managed (persistent), or disconnected (detached) from the Session.
+ * - Use `persist` to save a new entity, `merge` to update a detached entity, and `remove` to delete an entity.
+ * - Changes made to persistent entities are automatically saved to the database when the transaction is committed.
+ * - It's important to close the Session when you're done to free up resources.
+ * - Sessions are not thread-safe; each thread should have its own Session.
+ * - Objects obtained through `getReference` and `find` are the same instance within a Session, ensuring consistency.
+ * <p/>
+ */
 public interface Session extends AutoCloseable {
 
+  /**
+   * Finds an entity by its class type and primary key.
+   *
+   * @param entityClass The class of the entity to find.
+   * @param id          The primary key of the entity.
+   * @param <T>         The type of the entity.
+   *
+   * @return The found entity or {@code null} if the entity does not exist.
+   */
   <T> T find(Class<T> entityClass, Object id);
 
   /**
@@ -55,20 +75,63 @@ public interface Session extends AutoCloseable {
    */
   <T> Query<T> createQuery(String criteria, Class<T> entityClass);
 
+  /**
+   * Persists a new entity into the database.
+   *
+   * @param entity The entity to be persisted.
+   * @param <T>    The type of the entity.
+   */
   <T> void persist(T entity);
 
+  /**
+   * Retrieves an entity reference without initializing it. Useful for setting references to entities without
+   * requiring a database call.
+   *
+   * @param entityClass The class of the entity to reference.
+   * @param id          The primary key of the entity.
+   * @param <T>         The type of the entity.
+   *
+   * @return A reference to the entity.
+   */
   <T> T getReference(Class<T> entityClass, Object id);
 
+  /**
+   * Merges the state of the given entity into the current persistence context.
+   *
+   * @param entity The entity to merge.
+   * @param <T>    The type of the entity.
+   *
+   * @return The managed instance that the state was merged into.
+   */
   <T> T merge(T entity);
 
+  /**
+   * Detaches an entity from the persistence context, so changes to it will not be synchronized with the database.
+   *
+   * @param entity The entity to detach.
+   */
   void detach(Object entity);
 
+  /**
+   * Removes an entity from the database.
+   *
+   * @param entity The entity to remove.
+   */
   void remove(Object entity);
 
+  /**
+   * Flushes all pending changes to the database immediately.
+   */
   void flush();
 
-  void close();
-
+  /**
+   * Retrieves the current transaction associated with this session.
+   *
+   * @return The current {@link Transaction}.
+   */
   Transaction getTransaction();
+
+  @Override
+  void close();
 
 }

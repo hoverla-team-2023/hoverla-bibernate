@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.bibernate.hoverla.exceptions.BibernateException;
+import com.bibernate.hoverla.exceptions.OptimisticLockException;
 import com.bibernate.hoverla.exceptions.PersistOperationException;
 import com.bibernate.hoverla.jdbc.JdbcParameterBinding;
 import com.bibernate.hoverla.jdbc.JdbcResultExtractor;
@@ -26,25 +27,42 @@ import static java.util.stream.Collectors.joining;
 
 import static com.bibernate.hoverla.jdbc.JdbcParameterBinding.bindParameter;
 
+/**
+ * Service class for handling CRUD operations for entities.
+ * <p>
+ * The EntityDaoService class provides methods for inserting, updating, deleting, and loading entities
+ * from the database. It works in conjunction with the underlying database session to perform these operations.
+ * </p>
+ */
 @Slf4j
 @RequiredArgsConstructor
 public class EntityDaoService {
 
   private static final String DELETE_FROM_TABLE_BY_ID = "DELETE FROM %s WHERE %s = ?;";
-  private static final String SELECT_FROM_TABLE_BY_ID = "SELECT %s FROM %s WHERE %s = ?;";
+  private static final String SELECT_FROM_TABLE_BY_COlUMN = "SELECT %s FROM %s WHERE %s = ?;";
   private static final String INSERT_INTO_TABLE = "INSERT INTO %s (%s) VALUES (%s);";
   private static final String UPDATE_TABLE_BY_ID = "UPDATE %s SET %s WHERE %s = ?;";
   private static final String UPDATE_TABLE_WITH_OPTIMISTIC_LOCK = "UPDATE %s SET %s, %s = ? WHERE %s = ? AND %s = ?;";
 
   private final SessionImplementor session;
 
+  /**
+   * Inserts a new entity into the database.
+   * <p>
+   * This method inserts a new entity into the database. If the entity has an identity-generated primary key,
+   * the generated key is retrieved and set on the entity after insertion.
+   * </p>
+   *
+   * @param entity the entity to insert into the database.
+   * @param <T>    the type of the entity.
+   */
   public <T> void insert(T entity) {
     EntityMapping entityMapping = session.getEntityMapping(entity.getClass());
 
     entityMapping.getFieldMappingWithOptimisticLock()
       .ifPresent(optimisticLock -> initOptimisticLock(entity, optimisticLock));
 
-    List<FieldMapping<?>> insertableFields = getInsertableFields(entityMapping);
+    List<FieldMapping<?>> insertableFields = entityMapping.getFieldMappings(FieldMapping::isInsertable);
     JdbcParameterBinding<?>[] parameterBindings = getInsertParameterBinding(entity, insertableFields);
     FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
 
@@ -63,6 +81,7 @@ public class EntityDaoService {
     }
 
     if (isDetached(entity)) {
+      log.debug("Entity with class {} is detached. Skipping insert operation.", entityMapping.getClass());
       return;
     }
 
@@ -70,15 +89,56 @@ public class EntityDaoService {
     verifyInsertOperation(updatedRows);
   }
 
-  private <T> void initOptimisticLock(T entity, FieldMapping<?> optimisticLock) {
-    Number version = 1;
-    if (Long.class.isAssignableFrom(optimisticLock.getFieldType())) {
-      version = 1L;
+  /**
+   * Loads an entity from the database based on the given entity key.
+   * <p>
+   * This method loads an entity from the database based on the given entity key, which consists of the entity's type and ID.
+   * If multiple entities are found for the given entity key, an exception is thrown.
+   * </p>
+   *
+   * @param entityKey the entity key representing the entity to load.
+   * @param <T>       the type of the entity.
+   *
+   * @return the loaded entity, or null if no entity is found.
+   */
+  public <T> T load(EntityKey<T> entityKey) {
+
+    EntityMapping entityMapping = session.getEntityMapping(entityKey.entityType());
+
+    FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
+
+    String selectStatement = SELECT_FROM_TABLE_BY_COlUMN.formatted(entityMapping.getColumnNames(),
+                                                                   entityMapping.getTableName(),
+                                                                   primaryKeyMapping.getColumnName());
+
+    List<T> results = session.getJdbcExecutor()
+      .executeSelectQuery(selectStatement,
+                          getJdbcParameterBindings(entityKey, primaryKeyMapping),
+                          entityMapping.getJdbcTypes().toArray(new JdbcResultExtractor<?>[0]))
+      .stream()
+      .map(row -> getEntityFromRow(entityKey, row))
+      .toList();
+
+    if (results.size() > 1) {
+      String errorMessage = "Multiple entities found for the given entity key : %s. Expected only one result.".formatted(entityKey);
+      throw new BibernateException(errorMessage);
     }
 
-    EntityUtils.setFieldValue(optimisticLock.getFieldName(), entity, version);
+    return results.stream().findFirst().orElse(null);
   }
 
+  /**
+   * Loads a collection of entities associated with the given collection key.
+   * <p>
+   * This method loads a collection of entities associated with the given collection key from the database.
+   * It retrieves the entities based on the collection key's entity type and collection name.
+   * </p>
+   *
+   * @param collectionKey the collection key representing the collection of entities to load.
+   * @param <T>           the type of the entities in the collection.
+   *
+   * @return a list of entities loaded from the database.
+   */
   public <T> List<T> loadCollection(CollectionKey<?> collectionKey) {
     EntityMapping entityMappingOfParent = session.getEntityMapping(collectionKey.entityType());
     FieldMapping<?> fieldMapping = entityMappingOfParent.getFieldMapping(collectionKey.collectionName());
@@ -88,14 +148,14 @@ public class EntityDaoService {
     EntityMapping entityMapping = session.getEntityMapping(entityType);
     FieldMapping<?> joinColumn = entityMapping.getFieldMapping(oneToManyMapping.getMappedBy());
 
-    String selectStatement = SELECT_FROM_TABLE_BY_ID.formatted(EntityUtils.getColumnNames(entityMapping),
-                                                               entityMapping.getTableName(),
-                                                               joinColumn.getColumnName());
+    String selectStatement = SELECT_FROM_TABLE_BY_COlUMN.formatted(entityMapping.getColumnNames(),
+                                                                   entityMapping.getTableName(),
+                                                                   joinColumn.getColumnName());
 
     JdbcParameterBinding<?>[] bindValues = { bindParameter(collectionKey.id(),
                                                            joinColumn.getJdbcType()) };
 
-    var jdbcResultExtractors = EntityUtils.getJdbcTypes(entityMapping);
+    var jdbcResultExtractors = entityMapping.getJdbcTypes();
 
     List<Object[]> rows = session.getJdbcExecutor().executeSelectQuery(selectStatement,
                                                                        bindValues,
@@ -119,6 +179,7 @@ public class EntityDaoService {
     var entityKey = entityDetails.entityKey();
 
     if (isDetached(entityKey)) {
+      log.debug("Entity with key {} is detached. Skipping update operation.", entityKey);
       return;
     }
 
@@ -136,6 +197,52 @@ public class EntityDaoService {
       .ifPresentOrElse(
         optimisticLock -> updateEntityWithOptimisticLock(entity, tableName, columnsToUpdate, entityKey, primaryKeyMapping, dirtyFields, optimisticLock),
         () -> updateEntity(tableName, columnsToUpdate, entityKey, primaryKeyMapping, dirtyFields));
+  }
+
+  /**
+   * Deletes an existing entity from the database.
+   * <p>
+   * This method deletes an existing entity from the database based on its primary key.
+   * </p>
+   *
+   * @param entity the entity to delete from the database.
+   * @param <T>    the type of the entity.
+   */
+  public <T> void delete(T entity) {
+    EntityDetails<T> entityDetails = session.getEntityDetails(entity);
+
+    if (isDetached(entityDetails.entityKey())) {
+      log.debug("Entity with key {} is detached. Skipping delete operation.", entityDetails.entityKey());
+      return;
+    }
+
+    log.debug("Deleting entity: {}", entityDetails.entityKey());
+
+    FieldMapping<?> primaryKeyMapping = entityDetails.entityMapping().getPrimaryKeyMapping();
+    String deleteStatement = DELETE_FROM_TABLE_BY_ID.formatted(entityDetails.entityMapping().getTableName(),
+                                                               primaryKeyMapping.getColumnName());
+
+    JdbcParameterBinding<?>[] bindValues = { bindParameter(entityDetails.entityKey().id(),
+                                                           primaryKeyMapping.getJdbcType()) };
+
+    int updatedRows = session.getJdbcExecutor().executeUpdate(deleteStatement, bindValues);
+
+    log.debug("Entity with id {} deleted from table {}, updated rows {}", entityDetails.entityKey(), entityDetails.entityMapping().getTableName(),
+              updatedRows);
+
+    if (updatedRows == 0) {
+      throw new BibernateException("Row was deleted by another transaction " + entityDetails.entityKey());
+    }
+
+  }
+
+  private <T> T getEntityFromRow(EntityKey<T> entityKey, Object[] row) {
+    return session.getEntityRowMapper().createEntityFromRow(row, entityKey.entityType());
+  }
+
+  private <T> JdbcParameterBinding<?>[] getJdbcParameterBindings(EntityKey<T> entityKey, FieldMapping<?> primaryKeyMapping) {
+    return new JdbcParameterBinding<?>[] { bindParameter(entityKey.id(),
+                                                         primaryKeyMapping.getJdbcType()) };
   }
 
   private <T> void updateEntityWithOptimisticLock(T entity,
@@ -202,10 +309,19 @@ public class EntityDaoService {
     int updatedRows = session.getJdbcExecutor().executeUpdate(updateStatement, parameterBindings);
 
     if (updatedRows == 0) {
-      throw new BibernateException("Row was updated by another transaction " + entityKey);
+      throw new OptimisticLockException("Row was updated by another transaction " + entityKey);
     }
 
     log.debug("Entity with id {} was updated in table {}, updated rows: {}", entityKey, tableName, updatedRows);
+  }
+
+  private <T> void initOptimisticLock(T entity, FieldMapping<?> optimisticLock) {
+    Number version = 1;
+    if (Long.class.isAssignableFrom(optimisticLock.getFieldType())) {
+      version = 1L;
+    }
+
+    EntityUtils.setFieldValue(optimisticLock.getFieldName(), entity, version);
   }
 
   private Number getOptimisticLockNextValue(Number optimisticLockPrevValue) {
@@ -218,73 +334,8 @@ public class EntityDaoService {
     return optimisticLockNextValue;
   }
 
-  public <T> void delete(T entity) {
-    EntityDetails entityDetails = session.getEntityDetails(entity);
-    if (isDetached(entityDetails.entityKey())) {
-      return;
-    }
-
-    log.debug("Deleting entity: {}", entityDetails.entityKey());
-
-    FieldMapping<?> primaryKeyMapping = entityDetails.entityMapping().getPrimaryKeyMapping();
-    String deleteStatement = DELETE_FROM_TABLE_BY_ID.formatted(entityDetails.entityMapping().getTableName(),
-                                                               primaryKeyMapping.getColumnName());
-
-    JdbcParameterBinding<?>[] bindValues = { bindParameter(entityDetails.entityKey().id(),
-                                                           primaryKeyMapping.getJdbcType()) };
-
-    int updatedRows = session.getJdbcExecutor().executeUpdate(deleteStatement, bindValues);
-
-    log.debug("Entity with id {} deleted from table {}, updated rows {}", entityDetails.entityKey(), entityDetails.entityMapping().getTableName(),
-              updatedRows);
-
-    if (updatedRows == 0) {
-      throw new BibernateException("Row was deleted by another transaction " + entityDetails.entityKey());
-    }
-
-  }
-
-  public <T> T load(EntityKey<T> entityKey) {
-
-    EntityMapping entityMapping = session.getEntityMapping(entityKey.entityType());
-
-    FieldMapping<?> primaryKeyMapping = entityMapping.getPrimaryKeyMapping();
-
-    var columnNames = EntityUtils.getColumnNames(entityMapping);
-    String selectStatement = SELECT_FROM_TABLE_BY_ID.formatted(columnNames,
-                                                               entityMapping.getTableName(),
-                                                               primaryKeyMapping.getColumnName());
-
-    JdbcParameterBinding<?>[] bindValues = { bindParameter(entityKey.id(),
-                                                           primaryKeyMapping.getJdbcType()) };
-
-    var jdbcResultExtractors = EntityUtils.getJdbcTypes(entityMapping);
-
-    List<Object[]> rows = session.getJdbcExecutor().executeSelectQuery(selectStatement,
-                                                                       bindValues,
-                                                                       jdbcResultExtractors.toArray(new JdbcResultExtractor<?>[0]));
-
-    List<T> results = rows.stream()
-      .map(row -> session.getEntityRowMapper()
-        .createEntityFromRow(row, entityKey.entityType()))
-      .toList();
-
-    if (results.size() > 1) {
-      String errorMessage = "Multiple entities found for the given entity key : %s. Expected only one result.".formatted(entityKey);
-      throw new BibernateException(errorMessage);
-    }
-
-    return results.stream().findFirst().orElse(null);
-  }
-
   private boolean isIdentityGenerated(FieldMapping<?> primaryKeyMapping) {
     return primaryKeyMapping.getIdGeneratorStrategy().isIdentityGenerated();
-  }
-
-  private List<FieldMapping<?>> getInsertableFields(EntityMapping entityMapping) {
-    return entityMapping.getFieldNameMappingMap()
-      .values().stream()
-      .filter(FieldMapping::isInsertable).toList();
   }
 
   private <T> JdbcParameterBinding<?>[] getInsertParameterBinding(T entity, List<FieldMapping<?>> insertableFields) {

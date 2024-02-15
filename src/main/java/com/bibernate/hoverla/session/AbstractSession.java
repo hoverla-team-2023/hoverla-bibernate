@@ -12,30 +12,26 @@ import com.bibernate.hoverla.session.dirtycheck.DirtyCheckServiceImpl;
 import lombok.Getter;
 import lombok.SneakyThrows;
 
+/**
+ * Abstract base class implementing common functionality for {@link Session} and {@link SessionImplementor}.
+ */
+@Getter
 public abstract class AbstractSession implements Session, SessionImplementor {
 
-  @Getter
   protected final SessionFactoryImplementor sessionFactory;
 
-  @Getter
   protected final PersistenceContext persistenceContext;
 
-  @Getter
   protected final ActionQueue actionQueue;
 
-  @Getter
   protected final EntityDaoService entityDaoService;
 
-  @Getter
   protected final JdbcExecutor jdbcExecutor;
 
-  @Getter
   protected final EntityRowMapper entityRowMapper;
 
-  @Getter
   protected Connection currentConnection;
 
-  @Getter
   protected final DirtyCheckService dirtyCheckService;
 
   @SneakyThrows

@@ -102,8 +102,8 @@ public class QueryImpl<T> implements Query<T> {
     log.debug("Generating SQL statement for query: {}, entityClass: {}", queryExpression, resultType);
     var entityMapping = session.getEntityMapping(resultType);
 
-    var columnNames = EntityUtils.getColumnNames(entityMapping);
-    var jdbcResultExtractors = EntityUtils.getJdbcTypes(entityMapping);
+    var columnNames = entityMapping.getColumnNames();
+    var jdbcResultExtractors = entityMapping.getJdbcTypes();
     var tableName = entityMapping.getTableName();
 
     var abstractSyntaxTree = parseWhereStatement(queryExpression);

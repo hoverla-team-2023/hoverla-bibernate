@@ -72,7 +72,7 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
       actionQueue.addAction(new InsertAction(entity, entityDaoService));
     }
 
-    EntityDetails entityDetails = getEntityDetails(entity);
+    EntityDetails<?> entityDetails = getEntityDetails(entity);
     persistenceContext.manageEntity(entityDetails.entityKey(), () -> entity,
                                     entityEntry -> {});
   }
