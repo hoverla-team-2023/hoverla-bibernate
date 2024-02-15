@@ -168,12 +168,19 @@ public class EntityDaoService {
       .collect(Collectors.toList());
   }
 
-  private void verifyInsertOperation(int updatedRows) {
-    if (updatedRows == 0) {
-      throw new PersistOperationException("Row was not persisted");
-    }
-  }
-
+  /**
+   * Updates the provided entity in the database.
+   * <p>
+   * This method updates the entity in the database if it exists. It first checks if the entity
+   * is detached from the current session. If the entity is detached, the update operation is skipped.
+   * If the entity is attached, it identifies the fields that have been modified since the entity was
+   * loaded into the session and constructs an update query to reflect those changes in the database.
+   * If the entity has an optimistic lock defined, it uses the optimistic locking strategy to prevent
+   * concurrent updates to the same entity.
+   *
+   * @param entity the entity object to be updated.
+   * @param <T>    the type of the entity.
+   */
   public <T> void update(T entity) {
     var entityDetails = session.getEntityDetails(entity);
     var entityKey = entityDetails.entityKey();
@@ -236,6 +243,12 @@ public class EntityDaoService {
 
   }
 
+  private void verifyInsertOperation(int updatedRows) {
+    if (updatedRows == 0) {
+      throw new PersistOperationException("Row was not persisted");
+    }
+  }
+
   private <T> T getEntityFromRow(EntityKey<T> entityKey, Object[] row) {
     return session.getEntityRowMapper().createEntityFromRow(row, entityKey.entityType());
   }
@@ -267,7 +280,7 @@ public class EntityDaoService {
     Number optimisticLockNextValue = getOptimisticLockNextValue(optimisticLockPrevValue);
 
     List<JdbcParameterBinding<?>> parameterBindingsList = dirtyFields.stream()
-      .map(field -> bindParameter(field.value(), field.fieldMapping().getJdbcType()))
+      .map((DirtyFieldMapping<Object> fieldMapping) -> bindFieldParameter(fieldMapping.fieldMapping(), fieldMapping.value()))
       .collect(Collectors.toList());
     parameterBindingsList.add(bindParameter(optimisticLockNextValue, optimistiLockFieldMapping.getJdbcType()));
     parameterBindingsList.add(bindParameter(entityKey.id(), primaryKey.getJdbcType()));
@@ -288,6 +301,17 @@ public class EntityDaoService {
               entityKey, tableName, optimisticLockNextValue, updatedRows);
   }
 
+  private JdbcParameterBinding<?> bindFieldParameter(FieldMapping<?> fieldMapping, Object value) {
+    if (value == null) {
+      return bindParameter(null, fieldMapping.getJdbcType());
+    }
+    if (fieldMapping.isManyToOne()) {
+      EntityDetails<?> entityDetails = session.getEntityDetails(value);
+      return bindParameter(entityDetails.entityKey().id(), fieldMapping.getJdbcType());
+    }
+    return bindParameter(value, fieldMapping.getJdbcType());
+  }
+
   private void updateEntity(String tableName,
                             String columnsToUpdate,
                             EntityKey<?> entityKey,
@@ -301,7 +325,7 @@ public class EntityDaoService {
 
     JdbcParameterBinding<?>[] parameterBindings = Stream.concat(
         dirtyFields.stream()
-          .map(field -> bindParameter(field.value(), field.fieldMapping().getJdbcType())),
+          .map(field -> bindFieldParameter(field.fieldMapping(), field.value())),
         Stream.of(entityKey)
           .map(key -> bindParameter(key.id(), primaryKey.getJdbcType())))
       .toArray(JdbcParameterBinding[]::new);
@@ -341,7 +365,7 @@ public class EntityDaoService {
   private <T> JdbcParameterBinding<?>[] getInsertParameterBinding(T entity, List<FieldMapping<?>> insertableFields) {
     return insertableFields.stream().map(fieldMapping -> {
         Object fieldValue = EntityUtils.getFieldValue(fieldMapping.getFieldName(), entity);
-        return bindParameter(fieldValue, fieldMapping.getJdbcType());
+        return bindFieldParameter(fieldMapping, fieldValue);
       }).toList()
       .toArray(new JdbcParameterBinding<?>[0]);
   }

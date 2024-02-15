@@ -255,8 +255,8 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
    * The update action is associated with the entity and the entity DAO service.
    */
   private void updateEntitiesIfDirty() {
-    List<Object> dirtyEntities = dirtyCheckService.findDirtyEntities();
-    for (Object entity : dirtyEntities) {
+    List<?> dirtyEntities = dirtyCheckService.findDirtyEntities();
+    for (var entity : dirtyEntities) {
       log.debug("Updating the dirty entity: {}", getEntityDetails(entity).entityKey());
       actionQueue.addAction(new UpdateAction(entity, entityDaoService));
     }

@@ -18,7 +18,7 @@ public interface DirtyCheckService {
    *
    * @return A list of all dirty entities found in the persistence context map.
    */
-  List<Object> findDirtyEntities();
+  List<?> findDirtyEntities();
 
   /**
    * Retrieves a list of dirty field mappings for the updated fields of an entity.
@@ -29,6 +29,6 @@ public interface DirtyCheckService {
    */
   <T> List<DirtyFieldMapping<Object>> getUpdatedFields(T entity);
 
-  Object[] getSnapshot(EntityMapping entityMapping, Object entity);
+  Object[] getSnapshot(Class<?> entityClass, Object entity);
 
 }
