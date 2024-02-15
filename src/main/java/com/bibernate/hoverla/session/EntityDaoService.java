@@ -173,7 +173,16 @@ public class EntityDaoService {
       throw new PersistOperationException("Row was not persisted");
     }
   }
-
+  /**
+   * Updates an entity in the database.
+   * This method checks if the entity is detached and logs a message if it is.
+   * If the entity is not detached, it retrieves the dirty fields, determines whether an optimistic lock is present,
+   * and then calls the appropriate update method.
+   *
+   * @param <T> The type of the entity.
+   * @param entity The entity instance to update.
+   * @throws BibernateException If the entity key is not found in the session, indicating an internal error.
+   */
   public <T> void update(T entity) {
     var entityDetails = session.getEntityDetails(entity);
     var entityKey = entityDetails.entityKey();
@@ -244,7 +253,21 @@ public class EntityDaoService {
     return new JdbcParameterBinding<?>[] { bindParameter(entityKey.id(),
                                                          primaryKeyMapping.getJdbcType()) };
   }
-
+  /**
+   * Updates an entity in the database using an optimistic lock mechanism.
+   * This method constructs an update statement for the specified table and columns, binds the parameters for the update,
+   * and executes the update using the JDBC executor. It also handles the optimistic locking mechanism.
+   *
+   * @param <T> The type of the entity.
+   * @param entity The entity instance to update.
+   * @param tableName The name of the table to update.
+   * @param columnsToUpdate A comma-separated string of column names to update.
+   * @param entityKey The entity key that identifies the entity to update.
+   * @param primaryKey The field mapping for the primary key of the entity.
+   * @param dirtyFields A list of dirty field mappings representing the fields to update and their new values.
+   * @param optimistiLockFieldMapping The field mapping for the optimistic lock field of the entity.
+   * @throws BibernateException If the update operation did not affect any rows, indicating that the entity was updated by another transaction.
+   */
   private <T> void updateEntityWithOptimisticLock(T entity,
                                                   String tableName,
                                                   String columnsToUpdate,
@@ -287,7 +310,18 @@ public class EntityDaoService {
     log.debug("Entity with id {} was updated in table {}, new optimistic lock value: {}, updated rows: {}",
               entityKey, tableName, optimisticLockNextValue, updatedRows);
   }
-
+  /**
+   * Updates an entity in the database.
+   * This method constructs an update statement for the specified table and columns, binds the parameters for the update,
+   * and executes the update using the JDBC executor.
+   *
+   * @param tableName      The name of the table to update.
+   * @param columnsToUpdate A comma-separated string of column names to update.
+   * @param entityKey      The entity key that identifies the entity to update.
+   * @param primaryKey     The field mapping for the primary key of the entity.
+   * @param dirtyFields    A list of dirty field mappings representing the fields to update and their new values.
+   * @throws OptimisticLockException If the update operation did not affect any rows, indicating that the entity was updated by another transaction.
+   */
   private void updateEntity(String tableName,
                             String columnsToUpdate,
                             EntityKey<?> entityKey,
@@ -337,7 +371,15 @@ public class EntityDaoService {
   private boolean isIdentityGenerated(FieldMapping<?> primaryKeyMapping) {
     return primaryKeyMapping.getIdGeneratorStrategy().isIdentityGenerated();
   }
-
+  /**
+   * Retrieves the parameter bindings for an insert operation.
+   * This method generates an array of {@link JdbcParameterBinding} objects based on the provided entity and list of insertable fields.
+   *
+   * @param <T> The type of the entity.
+   * @param entity The entity instance for which to generate parameter bindings.
+   * @param insertableFields The list of field mappings that define the insertable fields of the entity.
+   * @return An array of {@link JdbcParameterBinding} objects representing the parameter bindings for the insert operation.
+   */
   private <T> JdbcParameterBinding<?>[] getInsertParameterBinding(T entity, List<FieldMapping<?>> insertableFields) {
     return insertableFields.stream().map(fieldMapping -> {
         Object fieldValue = EntityUtils.getFieldValue(fieldMapping.getFieldName(), entity);

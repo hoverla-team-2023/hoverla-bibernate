@@ -97,7 +97,15 @@ public class QueryImpl<T> implements Query<T> {
 
     return entities;
   }
-
+  /**
+   * Generates a SQL JDBC statement for the given query expression and entity class.
+   * This method parses the query expression, constructs a SQL WHERE statement using the
+   * BibernateWhereStatementVisitor, and then formats the SQL template with the column names,
+   * table name, and the generated WHERE statement.
+   *
+   * @return An instance of {@link SqlJdbcStatement} containing the SQL template, JDBC parameter
+   * bindings, and JDBC result extractors.
+   */
   public SqlJdbcStatement generateSqlJdbcStatement() {
     log.debug("Generating SQL statement for query: {}, entityClass: {}", queryExpression, resultType);
     var entityMapping = session.getEntityMapping(resultType);

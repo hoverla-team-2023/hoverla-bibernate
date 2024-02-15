@@ -65,14 +65,29 @@ public class EntityUtils {
 
     return tree;
   }
-
+  /**
+   * This private static method validates the syntax errors in a WhereStatementParser.
+   * It checks the number of syntax errors and the error messages list.
+   * If there are any syntax errors or error messages, it throws a BibernateBqlException with a combined error message.
+   *
+   * @param parser The WhereStatementParser to validate.
+   * @param errorMessages The list of error messages to validate.
+   * @throws BibernateBqlException If there are any syntax errors or error messages.
+   */
   private static void validateSyntaxErrors(WhereStatementParser parser, List<String> errorMessages) {
     int numberOfSyntaxErrors = parser.getNumberOfSyntaxErrors();
     if (numberOfSyntaxErrors > 0 || !errorMessages.isEmpty()) {
       throw new BibernateBqlException(String.join(",", errorMessages));
     }
   }
-
+  /**
+   * This private static method listens for error messages in a WhereStatementParser.
+   * It removes the default ConsoleErrorListener and adds a custom error listener that collects syntax errors.
+   * The syntax errors are collected in a list of error messages, which includes the line number, character position, and error message.
+   *
+   * @param parser The WhereStatementParser to listen for errors.
+   * @return A list of error messages collected from the parser.
+   */
   private static List<String> listenErrorMessages(WhereStatementParser parser) {
     final List<String> errorMessages = new ArrayList<>();
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
@@ -115,7 +130,16 @@ public class EntityUtils {
                                                  entityType.getName()), exc);
     }
   }
-
+  /**
+   * This static method sets the value of a field in an entity.
+   * The field is identified by its name and the entity is provided as an object.
+   * The method uses reflection to access and modify the field.
+   *
+   * @param fieldName The name of the field to set the value for.
+   * @param entity The entity instance whose field value will be set.
+   * @param value The value to be set in the field.
+   * @throws BibernateException If the field does not exist or cannot be accessed or modified due to security restrictions.
+   */
   public static void setFieldValue(String fieldName, Object entity, Object value) {
     try {
       Field field = entity.getClass().getDeclaredField(fieldName);
@@ -129,7 +153,16 @@ public class EntityUtils {
       );
     }
   }
-
+  /**
+   * This static method retrieves the value of a field from an entity.
+   * The field is identified by its name and the entity is provided as an object.
+   * The method uses reflection to access and retrieve the field value.
+   *
+   * @param fieldName The name of the field to get the value from.
+   * @param entity The entity instance whose field value will be retrieved.
+   * @return The value of the field in the entity.
+   * @throws BibernateException If the field does not exist or cannot be accessed due to security restrictions.
+   */
   public static Object getFieldValue(String fieldName, Object entity) {
     try {
       Field field = entity.getClass().getDeclaredField(fieldName);

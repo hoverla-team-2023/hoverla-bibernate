@@ -41,7 +41,15 @@ public class EntityRowMapper {
     log.debug("Creating entity of type {} from row data.", entityClass.getSimpleName());
     return entity;
   }
-
+  /**
+   * Populates the fields of the entity object with the data from the row.
+   * It also handles the population of lazy collections.
+   *
+   * @param row         The row data retrieved from the database.
+   * @param entityClass The class of the entity.
+   * @param entity      The entity object to populate.
+   * @param <T>         The type of the entity.
+   */
   private <T> void populateFields(Object[] row, Class<T> entityClass, T entity) {
     log.debug("Populating fields for entity class: {}", entityClass.getSimpleName());
 
@@ -59,7 +67,15 @@ public class EntityRowMapper {
 
     log.debug("Fields populated successfully for entity class: {}", entityClass.getSimpleName());
   }
-
+  /**
+   * Retrieves the field value from the column value.
+   * If the column value is null, it returns null.
+   * If the field is a many-to-one reference, it resolves the reference using the session implementor.
+   *
+   * @param fieldMapping The field mapping for the field.
+   * @param columnValue  The value from the database column.
+   * @return The field value.
+   */
   private <T> Object getFieldValue(FieldMapping<?> fieldMapping, Object columnValue) {
     if (columnValue == null) {
       log.trace("Column value is null for field: {}", fieldMapping.getFieldName());
@@ -73,7 +89,14 @@ public class EntityRowMapper {
 
     return columnValue;
   }
-
+  /**
+   * Populates the lazy collections of the entity.
+   *
+   * @param entityClass  The class of the entity.
+   * @param entityMapping The entity mapping for the entity.
+   * @param entity       The entity object.
+   * @param <T>          The type of the entity.
+   */
   private <T> void populateLazyCollections(Class<T> entityClass, EntityMapping entityMapping, T entity) {
     List<FieldMapping<?>> oneToManyMappings = entityMapping.getFieldMappings(FieldMapping::isOneToMany);
 
@@ -87,7 +110,15 @@ public class EntityRowMapper {
 
     oneToManyMappings.forEach(oneToManyMapping -> populateOneToManyAssociation(entity, oneToManyMapping, entityKey));
   }
-
+  /**
+   * Populates a one-to-many association of the entity.
+   * It creates a new PersistenceLazyList for the association and sets it as the value of the field in the entity.
+   *
+   * @param entity         The entity object.
+   * @param oneToManyMapping The field mapping for the one-to-many association.
+   * @param entityKey      The entity key for the entity.
+   * @param <T>            The type of the entity.
+   */
   private <T> void populateOneToManyAssociation(T entity, FieldMapping<?> oneToManyMapping, EntityKey<T> entityKey) {
     CollectionKey<T> collectionKey = new CollectionKey<>(entityKey.entityType(), entityKey.id(), oneToManyMapping.getFieldName());
 

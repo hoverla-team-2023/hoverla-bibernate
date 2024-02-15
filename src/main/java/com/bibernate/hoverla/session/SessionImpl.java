@@ -27,7 +27,11 @@ import com.bibernate.hoverla.utils.EntityProxyUtils;
 import com.bibernate.hoverla.utils.EntityUtils;
 
 import lombok.extern.slf4j.Slf4j;
-
+/**
+ * Implementation of the {@link Session} interface. This class is responsible for managing
+ * database sessions, including querying, persisting, merging, and removing entities, as well
+ * as flushing changes to the database and closing the session.
+ */
 @Slf4j
 public class SessionImpl extends AbstractSession implements Session, SessionImplementor {
 
@@ -38,7 +42,15 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
   public SessionImpl(SessionFactoryImplementor sessionFactoryImplementor) {
     super(sessionFactoryImplementor);
   }
-
+  /**
+   * Finds an entity of the specified class and primary key.
+   *
+   * @param <T>         The type of the entity.
+   * @param entityClass The class of the entity.
+   * @param id          The primary key of the entity.
+   * @return The entity if found, or null if not found.
+   * @throws IllegalStateException If the session is not open.
+   */
   @Override
   public <T> T find(Class<T> entityClass, Object id) {
     checkIfOpenSession();
@@ -47,14 +59,29 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
     return find(entityKey);
   }
-
+  /**
+   * Creates a new query for the specified criteria and entity class.
+   *
+   * @param <T>          The type of the entity.
+   * @param criteria     The criteria for the query.
+   * @param entityClass  The class of the entity.
+   * @return The created Query object.
+   * @throws IllegalStateException If the session is not open.
+   */
   @Override
   public <T> Query<T> createQuery(String criteria, Class<T> entityClass) {
     checkIfOpenSession();
     ensureEntityClassIsRegistered(entityClass);
     return new QueryImpl<>(this, criteria, entityClass);
   }
-
+  /**
+   * Persists a new entity to the database.
+   *
+   * @param <T>    The type of the entity.
+   * @param entity The entity to persist.
+   * @throws IllegalStateException If the session is not open.
+   * @throws BibernateException    If the entity is a proxy or if the unsaved value strategy is violated.
+   */
   @Override
   public <T> void persist(T entity) {
     checkIfOpenSession();
@@ -76,7 +103,15 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     persistenceContext.manageEntity(entityDetails.entityKey(), () -> entity,
                                     entityEntry -> {});
   }
-
+  /**
+   * Gets a reference to an entity without initializing it.
+   *
+   * @param <T>         The type of the entity.
+   * @param entityClass The class of the entity.
+   * @param id          The primary key of the entity.
+   * @return A proxy representing the entity if found, or null if not found.
+   * @throws IllegalStateException If the session is not open.
+   */
   @Override
   public <T> T getReference(Class<T> entityClass, Object id) {
     checkIfOpenSession();
@@ -89,7 +124,15 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
       .map(entityClass::cast)
       .orElse(null);
   }
-
+  /**
+   * Merges a detached entity back into the persistence context.
+   *
+   * @param <T>    The type of the entity.
+   * @param entity The detached entity to merge.
+   * @return The managed entity.
+   * @throws IllegalStateException If the session is not open.
+   * @throws BibernateException    If the entity cannot be merged.
+   */
   @Override
   public <T> T merge(T entity) {
     checkIfOpenSession();
@@ -107,7 +150,12 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
     return managedEntity;
   }
-
+  /**
+   * Detaches an entity from the persistence context.
+   *
+   * @param entity The entity to detach.
+   * @throws IllegalStateException If the session is not open.
+   */
   @Override
   public void detach(Object entity) {
     checkIfOpenSession();
@@ -115,7 +163,13 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     EntityDetails<?> entityDetails = getEntityDetails(entity);
     persistenceContext.removeEntity(entityDetails.entityKey());
   }
-
+  /**
+   * Removes an entity from the persistence context and marks it for deletion.
+   *
+   * @param entity The entity to remove.
+   * @throws IllegalStateException If the session is not open.
+   * @throws BibernateException    If the entity is not managed or if it is a detached entity.
+   */
   @Override
   public void remove(Object entity) {
     checkIfOpenSession();
@@ -135,14 +189,23 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
     actionQueue.addAction(new DeleteAction(entity, entityDaoService));
   }
-
+  /**
+   * Flushes all pending changes to the database.
+   *
+   * @throws IllegalStateException If the session is not open.
+   */
   @Override
   public void flush() {
     checkIfOpenSession();
     updateEntitiesIfDirty();
     actionQueue.executeActions();
   }
-
+  /**
+   * Closes the session, invalidating all caches and closing the database connection.
+   * After closing, the session cannot be used anymore.
+   *
+   * @throws IllegalStateException If the session is not open.
+   */
   @Override
   public void close() {
     checkIfOpenSession();

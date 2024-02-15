@@ -56,7 +56,17 @@ public class EntityProxyUtils {
     }
 
   }
-
+  /**
+   * This static method sets the interceptor field of an entity to the provided interceptor.
+   * The interceptor field is assumed to be named according to the constant INTERCEPTOR_FIELD_NAME.
+   * The method uses reflection to access and modify the field.
+   *
+   * @param <T> The type of the entity.
+   * @param entity The entity instance whose interceptor field will be set.
+   * @param interceptor The interceptor to be set in the entity's interceptor field.
+   * @throws NoSuchFieldException If the entity class does not have a field with the name INTERCEPTOR_FIELD_NAME.
+   * @throws IllegalAccessException If the field cannot be accessed or modified due to security restrictions.
+   */
   private static <T> void setInterceptorField(T entity, BibernateByteBuddyProxyInterceptor interceptor) throws NoSuchFieldException, IllegalAccessException {
     Field field = entity.getClass().getDeclaredField(INTERCEPTOR_FIELD_NAME);
     field.setAccessible(true);

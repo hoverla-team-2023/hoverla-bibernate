@@ -64,15 +64,30 @@ public class EntityMapping {
       .findAny()
       .orElseThrow(() -> new InvalidEntityDeclarationException("No primary key id declared"));//should never happen
   }
-
+  /**
+   * Adds a field mapping to the entity mapping.
+   *
+   * @param fieldName    The name of the field.
+   * @param fieldMapping The field mapping to add.
+   */
   public void addFieldMapping(String fieldName, FieldMapping<?> fieldMapping) {
     fieldNameMappingMap.put(fieldName, fieldMapping);
   }
-
+  /**
+   * Retrieves a field mapping by its name.
+   *
+   * @param fieldName The name of the field.
+   * @return The field mapping associated with the given field name, or null if not found.
+   */
   public FieldMapping<?> getFieldMapping(String fieldName) {
     return fieldNameMappingMap.get(fieldName);
   }
-
+  /**
+   * Retrieves a list of field mappings that satisfy the given predicate.
+   *
+   * @param predicate The predicate to filter field mappings.
+   * @return A list of field mappings that satisfy the predicate.
+   */
   public List<FieldMapping<?>> getFieldMappings(Predicate<? super FieldMapping<?>> predicate) {
     return getFieldNameMappingMap()
       .values()
@@ -80,20 +95,33 @@ public class EntityMapping {
       .filter(predicate)
       .toList();
   }
-
+  /**
+   * Retrieves the first field mapping with an optimistic lock.
+   *
+   * @return An Optional containing the first field mapping with an optimistic lock,
+   *         or an empty Optional if no such mapping exists.
+   */
   public Optional<FieldMapping<?>> getFieldMappingWithOptimisticLock() {
     return fieldNameMappingMap.values().stream()
       .filter(FieldMapping::isOptimisticLock)
       .findFirst();
   }
-
+  /**
+   * Retrieves a comma-separated string of column names for non-one-to-many fields.
+   *
+   * @return A string of column names for non-one-to-many fields.
+   */
   public String getColumnNames() {
     return getFieldMappings(mapping -> !mapping.isOneToMany())
       .stream()
       .map(FieldMapping::getColumnName)
       .collect(Collectors.joining(", "));
   }
-
+  /**
+   * Retrieves a list of JDBC types for non-one-to-many fields.
+   *
+   * @return A list of JDBC types for non-one-to-many fields.
+   */
   public List<? extends BibernateJdbcType<?>> getJdbcTypes() {
     return getFieldMappings(mapping -> !mapping.isOneToMany())
       .stream()
