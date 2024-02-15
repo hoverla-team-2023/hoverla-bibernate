@@ -103,7 +103,6 @@ class DirtyCheckITest {
       musicRecord.setTitle(newTitle);
       musicRecord.setArtist(newArtist);
       musicRecord.setGenre(newGenre);
-      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -146,7 +145,6 @@ class DirtyCheckITest {
       second.setTitle("Like you do");
       second.setArtist("Joji");
       second.setGenre(Genre.POP);
-      session.flush();
     });
 
     // verify the entities were updated in the database
@@ -190,7 +188,6 @@ class DirtyCheckITest {
       musicRecord.setTitle(newTitle);
       musicRecord.setArtist(newArtist);
       musicRecord.setGenre(newGenre);
-      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -222,7 +219,6 @@ class DirtyCheckITest {
       musicRecord.setTitle(oldTitle);
       musicRecord.setArtist(oldArtist);
       musicRecord.setGenre(oldGenre);
-      session.flush();
     });
 
     // verify the entity was updated in the database the second time
@@ -252,7 +248,6 @@ class DirtyCheckITest {
       musicRecord.setTitle(newTitle);
       musicRecord.setArtist(newArtist);
       musicRecord.setGenre(newGenre);
-      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -281,8 +276,6 @@ class DirtyCheckITest {
       comment.setComment(newComment);
       StoreItem storeItem = comment.getStoreItem();
       storeItem.setPrice(newPrice);
-
-      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -310,8 +303,6 @@ class DirtyCheckITest {
       comment.setComment(newComment);
       StoreItem storeItem = comment.getStoreItem();
       storeItem.setPrice(newPrice);
-
-      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -336,7 +327,6 @@ class DirtyCheckITest {
 
       // update the entity
       item.setPrice(newPrice);
-      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -363,7 +353,6 @@ class DirtyCheckITest {
 
       // update the entity
       comment.setStoreItem(storeItem);
-      session.flush();
     });
 
     // verify the entity was updated in the database
@@ -388,8 +377,6 @@ class DirtyCheckITest {
       // update the entity
       comment.setComment(newComment);
       comment.setStoreItem(null);
-
-      session.flush();
     });
 
     // verify the entity was updated in the database

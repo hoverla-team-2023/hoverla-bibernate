@@ -161,10 +161,6 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
       return getEntityId(o1) != getEntityId(o2);
     }
 
-    if (Objects.hashCode(o1) != Objects.hashCode(o2)) {
-      return true;
-    }
-
     return !Objects.equals(o1, o2);
   }
 

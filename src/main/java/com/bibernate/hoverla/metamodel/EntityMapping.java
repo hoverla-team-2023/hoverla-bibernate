@@ -3,6 +3,7 @@ package com.bibernate.hoverla.metamodel;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import com.bibernate.hoverla.exceptions.InvalidEntityDeclarationException;
@@ -62,6 +63,12 @@ public class EntityMapping {
       .stream()
       .filter(predicate)
       .toList();
+  }
+
+  public Optional<FieldMapping<?>> getFieldMappingWithOptimisticLock() {
+    return fieldNameMappingMap.values().stream()
+      .filter(FieldMapping::isOptimisticLock)
+      .findFirst();
   }
 
 }

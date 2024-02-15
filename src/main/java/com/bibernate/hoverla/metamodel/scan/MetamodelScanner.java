@@ -17,6 +17,7 @@ import com.bibernate.hoverla.annotations.Id;
 import com.bibernate.hoverla.annotations.IdentityGeneratedValue;
 import com.bibernate.hoverla.annotations.ManyToOne;
 import com.bibernate.hoverla.annotations.OneToMany;
+import com.bibernate.hoverla.annotations.OptimisticLock;
 import com.bibernate.hoverla.annotations.SequenceGeneratedValue;
 import com.bibernate.hoverla.annotations.Table;
 import com.bibernate.hoverla.annotations.Transient;
@@ -35,6 +36,9 @@ import lombok.RequiredArgsConstructor;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
+
+import static org.apache.commons.lang3.ClassUtils.isPrimitiveOrWrapper;
+import static org.apache.commons.lang3.ClassUtils.primitiveToWrapper;
 
 import static com.bibernate.hoverla.utils.EntityUtils.toSnakeCase;
 
@@ -90,6 +94,7 @@ public class MetamodelScanner {
     }
 
     validatePrimaryKey(entityClass, entityMapping.getFieldNameMappingMap().values());
+    validateOptimisticLock(entityClass, entityMapping.getFieldNameMappingMap().values());
 
     return entityMapping;
   }
@@ -114,6 +119,39 @@ public class MetamodelScanner {
     }
   }
 
+  private void validateOptimisticLock(Class<?> entityClass, Collection<FieldMapping<?>> fieldMappings) {
+    var optimisticLockFields = fieldMappings.stream()
+      .filter(FieldMapping::isOptimisticLock)
+      .toList();
+
+    if (!optimisticLockFields.isEmpty()) {
+      if (optimisticLockFields.size() > 1) {
+        throw new InvalidEntityDeclarationException(String.format(
+          "Entity '%s' has multiple optimistic lock fields defined. Please define at most one field with @OptimisticLock annotation",
+          entityClass.getName()
+        ));
+      }
+
+      FieldMapping<?> optimisticLock = optimisticLockFields.getFirst();
+      validateOptimisticLockType(entityClass, optimisticLock);
+    }
+  }
+
+  private void validateOptimisticLockType(Class<?> entityClass, FieldMapping<?> fieldMapping) {
+    Class<?> fieldType = fieldMapping.getFieldType();
+    if (isPrimitiveOrWrapper(fieldType)) {
+      Class<?> wrapperType = primitiveToWrapper(fieldType);
+      if (Integer.class.isAssignableFrom(wrapperType) || Long.class.isAssignableFrom(wrapperType)) {
+        return;
+      }
+    }
+
+    throw new InvalidEntityDeclarationException(String.format(
+      "Entity '%s' has an optimistic lock field '%s' of type '%s' which is not supported. Please use Integer or Long",
+      entityClass.getName(), fieldMapping.getFieldName(), fieldType
+    ));
+  }
+
   private String resolveTableName(Class<?> entityClass) {
     return Optional.ofNullable(entityClass.getAnnotation(Table.class))
       .map(Table::value)
@@ -135,6 +173,7 @@ public class MetamodelScanner {
       .idGeneratorStrategy(resolveIdGenerationStrategy(field))
       .oneToManyMapping(resolveOneToManyMapping(field))
       .isOneToMany(field.isAnnotationPresent(OneToMany.class))
+      .isOptimisticLock(field.isAnnotationPresent(OptimisticLock.class))
       .build();
     return fieldMapping;
   }
