@@ -2,6 +2,8 @@
 
 Bibernate is an advanced ORM (Object-Relational Mapping) framework designed to facilitate seamless data interaction between Java applications and relational databases. This document provides detailed guidance on configuring Bibernate, a lightweight and high-performance JDBC connection pool.
 
+![Logo.png](assets/Logo.png)
+
 ## Configuration
 
 Bibernate leverages connection pool for its datasource management, ensuring optimal database performance and resource utilization. Below is the recommended configuration setup for integrating HikariCP with Bibernate:
