@@ -16,7 +16,7 @@ public class ItemComment {
 
   @Id
   @IdentityGeneratedValue
-  private Long id;
+  private Integer id;
   private String comment;
 
   @ManyToOne
