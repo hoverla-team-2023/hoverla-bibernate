@@ -41,14 +41,14 @@ public class PersistenceContext {
     return entityKeyEntityEntryMap.get(entityKey);
   }
 
+  //todo remove the 3rd argument as unused
   public EntityEntry manageEntity(EntityKey<?> entityKey, Supplier<Object> getEntityOrProxyFunction, Consumer<EntityEntry> processFunction) {
 
     EntityEntry entityEntry = entityKeyEntityEntryMap.get(entityKey);
     if (entityEntry == null) {
       entityEntry = putNewEntityEntry(entityKey, getEntityOrProxyFunction);
     } else {
-      initialyProxyIfNeeded(getEntityOrProxyFunction, entityEntry);
-      entityEntry.setSnapshot(dirtyCheckService.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entityEntry.getEntity()));
+      initialyProxyIfNeeded(entityKey, getEntityOrProxyFunction, entityEntry);
     }
 
     if (entityEntry != null) {
@@ -129,15 +129,16 @@ public class PersistenceContext {
     }
 
     entityEntry.setEntity(entity);
-    entityEntry.setSnapshot(dirtyCheckService.getSnapshot(sessionImplementor.getEntityMapping(entityKey.entityType()), entity));
+    entityEntry.setSnapshot(dirtyCheckService.getSnapshot(entityKey.entityType(), entity));
     return entityEntry;
   }
 
-  private void initialyProxyIfNeeded(Supplier<Object> getEntityOrProxyFunction, EntityEntry entityEntry) {
+  private void initialyProxyIfNeeded(EntityKey<?> entityKey, Supplier<Object> getEntityOrProxyFunction, EntityEntry entityEntry) {
     if (EntityProxyUtils.isUnitializedProxy(entityEntry.getEntity())) {
       Object entity = getEntityOrProxyFunction.get();
       if (!EntityProxyUtils.isProxy(entity)) {
         EntityProxyUtils.initializeProxy(entityEntry.getEntity(), entity);
+        entityEntry.setSnapshot(dirtyCheckService.getSnapshot(entityKey.entityType(), entityEntry.getEntity()));
       }
     }
   }

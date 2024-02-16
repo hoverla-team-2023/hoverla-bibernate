@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.bibernate.hoverla.exceptions.BibernateException;
 import com.bibernate.hoverla.exceptions.LazyLoadingException;
 import com.bibernate.hoverla.session.LockMode;
 import com.bibernate.hoverla.session.SessionImplementor;
@@ -103,9 +102,8 @@ public class BibernateByteBuddyProxyInterceptor<T> {
       EntityKey<T> entityKey = new EntityKey<>(entityClass, entityId);
       Object loaded = session.getEntityDaoService().load(entityKey, LockMode.NONE);
       session.getPersistenceContext().manageEntity(entityKey, () -> loaded, entry -> {});
-      //todo change error message
       if (loaded == null) {
-        throw new BibernateException();
+        throw new LazyLoadingException("Failed to load entity: entity was not found.");
       }
       this.loadedEntity = loaded;
     }
