@@ -16,8 +16,6 @@
     <bibernate.version>1.0-SNAPSHOT</bibernate.version>
     <lombok.version>1.18.30</lombok.version>
     <postgresql.version>42.6.0</postgresql.version>
-    <testcontainer.postgresql.version>1.19.3</testcontainer.postgresql.version>
-    <HikariCP.version>5.0.1</HikariCP.version>
   </properties>
 
   <dependencies>
@@ -36,16 +34,6 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>${postgresql.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>${testcontainer.postgresql.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
-      <version>${HikariCP.version}</version>
     </dependency>
   </dependencies>
 
