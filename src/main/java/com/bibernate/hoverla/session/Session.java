@@ -142,6 +142,9 @@ public interface Session extends AutoCloseable {
    */
   Transaction getTransaction();
 
+  /**
+   * Closes the session, releasing all resources associated with it.
+   */
   @Override
   void close();
 

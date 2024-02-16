@@ -74,6 +74,12 @@ public class EntityProxyUtils {
     return getProxyInterceptor(object) != null;
   }
 
+  /**
+   * Checks if the provided object is an uninitialized proxy.
+   *
+   * @param object The object to be checked.
+   * @return True if the object is an uninitialized proxy, false otherwise.
+   */
   public static boolean isUnitializedProxy(Object object) {
     BibernateByteBuddyProxyInterceptor<Object> proxyInterceptor = getProxyInterceptor(object);
     return proxyInterceptor != null && proxyInterceptor.getLoadedEntity() == null;
@@ -97,6 +103,13 @@ public class EntityProxyUtils {
     }
   }
 
+  /**
+   * Initializes the proxy with the provided entity if the proxy is not already initialized.
+   *
+   * @param proxy  The proxy object to be initialized.
+   * @param entity The entity to initialize the proxy with.
+   * @param <T>    The type of the proxy and entity.
+   */
   public static <T> void initializeProxy(T proxy, T entity) {
     var proxyInterceptor = EntityProxyUtils.getProxyInterceptor(proxy);
     if (proxyInterceptor == null) {
@@ -106,6 +119,14 @@ public class EntityProxyUtils {
     proxyInterceptor.initializyIfEmpty(entity);
   }
 
+  /**
+   * Unwraps the proxy object to obtain the actual entity.
+   *
+   * @param proxy The proxy object to be unwrapped.
+   * @param <T>   The type of the entity.
+   *
+   * @return The actual entity if the given object is a proxy; otherwise, returns the same object.
+   */
   public static <T> T unProxy(T proxy) {
     var proxyInterceptor = EntityProxyUtils.getProxyInterceptor(proxy);
     if (proxyInterceptor == null) {
@@ -115,6 +136,14 @@ public class EntityProxyUtils {
     return (T) proxyInterceptor.getLoadedEntity();
   }
 
+  /**
+   * Unwraps the proxy object and initializes it to obtain the actual entity.
+   *
+   * @param proxy The proxy object to be unwrapped and initialized.
+   * @param <T>   The type of the entity.
+   *
+   * @return The actual entity if the given object is a proxy; otherwise, returns the same object.
+   */
   public static <T> T unProxyAndInitialize(T proxy) {
     var proxyInterceptor = EntityProxyUtils.getProxyInterceptor(proxy);
     if (proxyInterceptor == null) {

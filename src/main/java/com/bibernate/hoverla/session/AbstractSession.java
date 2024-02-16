@@ -37,7 +37,7 @@ public abstract class AbstractSession implements Session, SessionImplementor {
   @SneakyThrows
   public AbstractSession(SessionFactoryImplementor sessionFactory) {
     this.dirtyCheckService = new DirtyCheckServiceImpl(this);
-    this.persistenceContext = new PersistenceContext(this, dirtyCheckService);
+    this.persistenceContext = new PersistenceContext(dirtyCheckService);
     this.sessionFactory = sessionFactory;
     this.entityDaoService = new EntityDaoService(this);
     this.actionQueue = new ActionQueue();

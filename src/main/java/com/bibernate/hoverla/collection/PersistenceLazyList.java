@@ -19,9 +19,7 @@ import com.bibernate.hoverla.session.cache.CollectionKey;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A lazily loaded list implementation that defers the fetching of its contents
- * until they are needed. This class is particularly useful for reducing initial
- * load time and resource usage for lists whose contents are expensive to fetch.
+ * Represents a lazy-loading list for persistence purposes.
  *
  * @param <T> the type of elements in this list
  */

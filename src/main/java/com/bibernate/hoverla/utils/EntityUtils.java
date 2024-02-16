@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
@@ -18,14 +17,15 @@ import com.bibernate.grammar.WhereStatementLexer;
 import com.bibernate.grammar.WhereStatementParser;
 import com.bibernate.hoverla.exceptions.BibernateBqlException;
 import com.bibernate.hoverla.exceptions.BibernateException;
-import com.bibernate.hoverla.jdbc.types.BibernateJdbcType;
-import com.bibernate.hoverla.metamodel.EntityMapping;
-import com.bibernate.hoverla.metamodel.FieldMapping;
+import com.bibernate.hoverla.exceptions.IllegalFieldAccessException;
 import com.bibernate.hoverla.session.cache.EntityKey;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+/**
+ * Utility class for working with entities.
+ */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EntityUtils {
 
@@ -107,6 +107,16 @@ public class EntityUtils {
     }
   }
 
+  /**
+   * Creates a new instance of the specified entity type using its default no-args constructor.
+   *
+   * @param entityType The class of the entity type to instantiate.
+   * @param <T>        The type of the entity.
+   *
+   * @return A new instance of the specified entity type.
+   *
+   * @throws BibernateException if there is an error instantiating the object.
+   */
   public static <T> T newInstanceOf(Class<T> entityType) {
     try {
       return entityType.getDeclaredConstructor().newInstance();
@@ -116,30 +126,49 @@ public class EntityUtils {
     }
   }
 
+  /**
+   * Sets the value of the specified field in the given entity object.
+   *
+   * @param fieldName The name of the field.
+   * @param entity    The entity object in which to set the field value.
+   * @param value     The value to set.
+   *
+   * @throws IllegalFieldAccessException if there is an error accessing the field.
+   */
   public static void setFieldValue(String fieldName, Object entity, Object value) {
     try {
       Field field = entity.getClass().getDeclaredField(fieldName);
       field.setAccessible(true);
       field.set(entity, value);
     } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw new BibernateException(String.format(
+      throw new IllegalFieldAccessException(String.format(
         "Error setting value to field %s of entity %s",
         fieldName,
-        entity.getClass().getName())
+        entity.getClass().getName()), e
       );
     }
   }
 
+  /**
+   * Gets the value of the specified field from the given entity object.
+   *
+   * @param fieldName The name of the field.
+   * @param entity    The entity object from which to retrieve the field value.
+   *
+   * @return The value of the specified field in the entity.
+   *
+   * @throws com.bibernate.hoverla.exceptions.IllegalFieldAccessException if there is an error accessing the field.
+   */
   public static Object getFieldValue(String fieldName, Object entity) {
     try {
       Field field = entity.getClass().getDeclaredField(fieldName);
       field.setAccessible(true);
       return field.get(entity);
     } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw new BibernateException(String.format(
+      throw new IllegalFieldAccessException(String.format(
         "Error getting value from field %s of entity %s",
         fieldName,
-        entity.getClass().getName())
+        entity.getClass().getName()), e
       );
     }
   }
