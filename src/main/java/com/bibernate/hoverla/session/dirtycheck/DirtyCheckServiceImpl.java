@@ -36,6 +36,7 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
       .filter(this::isManaged)
       .filter(not(this::isReadOnly))
       .filter(entry -> !EntityProxyUtils.isUnitializedProxy(entry.getValue().getEntity()))
+      .peek(entry -> log.trace("Checking entity for dirtiness: {}", entry.getKey()))
       .filter(entry -> isDirtyEntity(entry.getKey().entityType(), entry.getValue()))
       .map(entry -> entry.getValue().getEntity())
       .toList();
@@ -44,6 +45,7 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
   @Override
   public <T> List<DirtyFieldMapping<Object>> getUpdatedFields(T entity) {
     var entityDetails = sessionImplementor.getEntityDetails(entity);
+    log.debug("Getting updated fields for entity: {}.", entityDetails.entityKey());
     var entityEntry = sessionImplementor.getEntityEntry(entityDetails.entityKey());
 
     Object unProxied = EntityProxyUtils.unProxy(entity);
@@ -65,6 +67,8 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
         dirtyFieldMappings.add(DirtyFieldMapping.of(field, fieldValue));
       }
     }
+    log.debug("Found {} updated fields for entity: {}.", dirtyFieldMappings.size(), entity.getClass().getSimpleName());
+
     return dirtyFieldMappings;
   }
 
@@ -78,6 +82,8 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
     if (unProxied == null) {
       return new Object[0];
     }
+
+    log.trace("Snapshot generated for entity: {}", entityMapping.getEntityClass().getSimpleName());
 
     return entityMapping.getFieldMappings(FieldMapping::isUpdatable)
       .stream()
@@ -114,8 +120,12 @@ public class DirtyCheckServiceImpl implements DirtyCheckService {
       Object object = oldSnapshot[i++];
       Object fieldValue = getFieldValue(entityMapping.getEntityClass(), unProxied, field.getFieldName());
       if (object != fieldValue && field.isManyToOne()) {
+        log.trace("Detected dirty entity: {} due to change in ManyToOne relationship.", entityType.getSimpleName());
+
         return true;
       } else if (!Objects.equals(object, fieldValue)) {
+        log.trace("Detected dirty entity: {} due to change in field: {}.", entityType.getSimpleName(), field.getFieldName());
+
         return true;
       }
     }

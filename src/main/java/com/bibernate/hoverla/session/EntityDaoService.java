@@ -67,6 +67,7 @@ public class EntityDaoService {
    * @param <T>    the type of the entity.
    */
   public <T> void insert(T entity) {
+    log.info("Inserting entity...");
     EntityMapping entityMapping = session.getEntityMapping(entity.getClass());
 
     entityMapping.getFieldMappingWithOptimisticLock()
@@ -87,6 +88,8 @@ public class EntityDaoService {
         .executeUpdateAndReturnGeneratedKeys(insertStatement, parameterBindings, primaryKeyMapping.getJdbcType());
 
       EntityUtils.setFieldValue(primaryKeyMapping.getFieldName(), entity, generatedKey);
+      log.debug("Entity inserted successfully, generated keys populated.");
+
       return;
     }
 
@@ -112,6 +115,7 @@ public class EntityDaoService {
    * @return the loaded entity, or null if no entity is found.
    */
   public <T> T load(EntityKey<T> entityKey, LockMode lockMode) {
+    log.debug("Loading entity with entity key: {} and lock mode: {}", entityKey, lockMode);
 
     EntityMapping entityMapping = session.getEntityMapping(entityKey.entityType());
 
@@ -297,6 +301,8 @@ public class EntityDaoService {
   }
 
   private <T> void updateEntityWithOptimisticLock(UpdateEntityRequest<T> request) {
+    log.debug("Updating entity with optimistic lock: {}.", request.entityKey);
+
     String optimisticLockColumn = request.optimisticLock.getColumnName();
 
     String updateStatement = UPDATE_TABLE_WITH_OPTIMISTIC_LOCK.formatted(

@@ -28,6 +28,9 @@ import com.bibernate.hoverla.utils.EntityUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Implementation of the Session interface providing session management functionalities.
+ */
 @Slf4j
 public class SessionImpl extends AbstractSession implements Session, SessionImplementor {
 
@@ -39,13 +42,34 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     super(sessionFactoryImplementor);
   }
 
+  /**
+   * Finds an entity by its class and identifier.
+   *
+   * @param entityClass The class of the entity.
+   * @param id          The identifier of the entity.
+   *
+   * @return The found entity.
+   *
+   * @see Session#find(Class, Object)
+   */
   @Override
   public <T> T find(Class<T> entityClass, Object id) {
     return find(entityClass, id, LockMode.NONE);
   }
 
+  /**
+   * Finds an entity by its class type and primary key.
+   *
+   * @param entityClass The class of the entity to find.
+   * @param id          The primary key of the entity.
+   * @param <T>         The type of the entity.
+   *
+   * @return The found entity or {@code null} if the entity does not exist.
+   */
   @Override
   public <T> T find(Class<T> entityClass, Object id, LockMode lockMode) {
+    log.debug("Finding entity of class {} with id {} and lock mode {}", entityClass.getSimpleName(), id, lockMode);
+
     checkIfOpenSession();
     ensureEntityClassIsRegistered(entityClass);
 
@@ -53,6 +77,16 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     return find(entityKey, lockMode);
   }
 
+  /**
+   * Creates a new query instance for the given criteria and entity class.
+   *
+   * @param criteria    The criteria for the query.
+   * @param entityClass The class of the entity.
+   *
+   * @return A new Query instance.
+   *
+   * @see Session#createQuery(String, Class)
+   */
   @Override
   public <T> Query<T> createQuery(String criteria, Class<T> entityClass) {
     checkIfOpenSession();
@@ -60,8 +94,18 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     return new QueryImpl<>(this, criteria, entityClass);
   }
 
+  /**
+   * Persists a new entity into the database.
+   *
+   * @param entity The entity to be persisted.
+   * @param <T>    The type of the entity.
+   *
+   * @see Session#persist(Object)
+   */
   @Override
   public <T> void persist(T entity) {
+    log.trace("Persisting entity...");
+
     checkIfOpenSession();
     verifyIsNotProxy(entity);
 
@@ -71,8 +115,10 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     verifyUnsavedValueStrategy(entity, primaryKeyMapping);
 
     if (isIdentityGenerated(primaryKeyMapping)) {
+      log.debug("Identity generation strategy detected. Adding IdentityInsertAction for entity.");
       actionQueue.addAction(new IdentityInsertAction(entity, entityDaoService));
     } else {
+      log.debug("Adding InsertAction for entity.");
       populateGeneratedIdIfRequired(entity, primaryKeyMapping);
       actionQueue.addAction(new InsertAction(entity, entityDaoService));
     }
@@ -80,10 +126,25 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     EntityDetails<?> entityDetails = getEntityDetails(entity);
     persistenceContext.manageEntity(entityDetails.entityKey(), () -> entity,
                                     entityEntry -> {});
+
+    log.debug("Entity persisted successfully.");
+
   }
 
+  /**
+   * Gets a reference to the entity of the specified class with the given identifier.
+   *
+   * @param entityClass The class of the entity.
+   * @param id          The identifier of the entity.
+   *
+   * @return A reference to the entity.
+   *
+   * @see Session#getReference(Class, Object)
+   */
   @Override
   public <T> T getReference(Class<T> entityClass, Object id) {
+    log.debug("Getting reference for entity class: {} with id: {}", entityClass.getSimpleName(), id);
+
     checkIfOpenSession();
     getEntityMapping(entityClass);
     EntityKey<T> entityKey = new EntityKey<>(entityClass, id);
@@ -95,12 +156,26 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
       .orElse(null);
   }
 
+  /**
+   * Merges the state of the given entity into the current persistence context.
+   *
+   * @param entity The entity to be merged.
+   *
+   * @return The managed copy of the entity.
+   *
+   * @throws BibernateException if the entity cannot be merged.
+   * @see Session#merge(Object)
+   */
   @Override
   public <T> T merge(T entity) {
+    log.debug("Merging entity...");
+
     checkIfOpenSession();
     T detachedEntity = EntityProxyUtils.unProxyAndInitialize(entity);
 
     EntityDetails<T> entityDetails = getEntityDetails(entity);
+
+    log.trace("Merging entity: {}", entityDetails.entityKey());
 
     T managedEntity = find(entityDetails.entityKey());
 
@@ -110,21 +185,39 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
 
     updateFields(managedEntity, entityDetails, detachedEntity);
 
+    log.debug("Entity merged successfully: {}", entityDetails.entityKey());
+
     return managedEntity;
   }
 
+  /**
+   * Detaches the given entity from the persistence context.
+   *
+   * @param entity The entity to be detached.
+   */
   @Override
   public void detach(Object entity) {
+    log.trace("Detaching entity...");
     checkIfOpenSession();
 
     EntityDetails<?> entityDetails = getEntityDetails(entity);
+    log.debug("Detaching entity: {}", entityDetails.entityKey());
+
     persistenceContext.removeEntity(entityDetails.entityKey());
+    log.debug("Entity detached: {}", entityDetails.entityKey());
   }
 
+  /**
+   * Removes an entity from the database.
+   *
+   * @param entity The entity to remove.
+   */
   @Override
   public void remove(Object entity) {
     checkIfOpenSession();
     EntityDetails<?> entityDetails = getEntityDetails(entity);
+
+    log.debug("Removing entity: {}", entityDetails.entityKey());
 
     EntityEntry entityEntry = persistenceContext.getEntityEntry(entityDetails.entityKey());
 
@@ -141,13 +234,23 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
     actionQueue.addAction(new DeleteAction(entity, entityDaoService));
   }
 
+  /**
+   * Flushes the session, synchronizing the in-memory state of managed entities with the database.
+   */
   @Override
   public void flush() {
+    log.debug("Flushing session.");
+
     checkIfOpenSession();
     updateEntitiesIfDirty();
     actionQueue.executeActions();
+
+    log.debug("Session flushed successfully.");
   }
 
+  /**
+   * Closes the session, releasing all resources associated with it.
+   */
   @Override
   public void close() {
     checkIfOpenSession();
@@ -161,23 +264,41 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
    */
   @Override
   public void invalidateCaches() {
+    log.debug("Invalidating caches associated with the current session.");
     checkIfOpenSession();
     this.persistenceContext.invalidateCache();
   }
 
+  /**
+   * Retrieves the connection associated with this session.
+   *
+   * @return The connection associated with this session.
+   */
   @Override
   public Connection getConnection() {
     checkIfOpenSession();
     return currentConnection;
   }
 
+  /**
+   * Retrieves the transaction associated with this session.
+   *
+   * @return The transaction associated with this session.
+   */
   @Override
   public Transaction getTransaction() {
+    log.debug("Retrieving session transaction.");
+
     checkIfOpenSession();
     if (currentTransaction != null && currentTransaction.isActive()) {
+      log.trace("Session transaction retrieved successfully.");
+
       return currentTransaction;
     }
+
     this.currentTransaction = new TransactionImpl(this);
+
+    log.trace("Session transaction retrieved successfully.");
     return currentTransaction;
   }
 
@@ -264,6 +385,8 @@ public class SessionImpl extends AbstractSession implements Session, SessionImpl
    * The update action is associated with the entity and the entity DAO service.
    */
   private void updateEntitiesIfDirty() {
+    log.debug("Updating dirty entities.");
+
     List<?> dirtyEntities = dirtyCheckService.findDirtyEntities();
     for (var entity : dirtyEntities) {
       log.debug("Updating the dirty entity: {}", getEntityDetails(entity).entityKey());

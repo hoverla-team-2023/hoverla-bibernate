@@ -95,7 +95,7 @@ public class BibernateByteBuddyProxyInterceptor<T> {
    */
   public void loadProxy() {
     if (this.loadedEntity == null) {
-      log.debug("initializing lazy loading");
+      log.debug("Initializing lazy loading...");
       if (session == null) {
         throw new LazyLoadingException("Failed to load entity: session is null.");
       }
@@ -103,7 +103,7 @@ public class BibernateByteBuddyProxyInterceptor<T> {
       Object loaded = session.getEntityDaoService().load(entityKey, LockMode.NONE);
       session.getPersistenceContext().manageEntity(entityKey, () -> loaded, entry -> {});
       if (loaded == null) {
-        throw new LazyLoadingException("Failed to load entity: entity was not found.");
+        throw new LazyLoadingException("Failed to load entity %s: entity was not found.".formatted(entityKey));
       }
       this.loadedEntity = loaded;
     }
@@ -117,7 +117,7 @@ public class BibernateByteBuddyProxyInterceptor<T> {
    * @return True if the method is a getter for the ID, false otherwise.
    */
   private boolean isIdGetter(Method method) {
-    return method.getName().equals(getIdMethodName); // todo get it from metamodel
+    return method.getName().equals(getIdMethodName);
   }
 
   /**
@@ -135,7 +135,6 @@ public class BibernateByteBuddyProxyInterceptor<T> {
   public void initializyIfEmpty(Object loadedEntity) {
     if (this.loadedEntity == null) {
       this.loadedEntity = loadedEntity;
-      //todo save snapshot
     }
   }
 

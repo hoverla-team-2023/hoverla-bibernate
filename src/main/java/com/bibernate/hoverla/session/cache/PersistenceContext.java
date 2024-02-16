@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.bibernate.hoverla.collection.PersistenceLazyList;
-import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.dirtycheck.DirtyCheckService;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
 import com.bibernate.hoverla.utils.proxy.BibernateByteBuddyProxyInterceptor;
@@ -23,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PersistenceContext {
 
-  private final SessionImplementor sessionImplementor;
   private final DirtyCheckService dirtyCheckService;
 
   @Getter
@@ -41,19 +39,35 @@ public class PersistenceContext {
     return entityKeyEntityEntryMap.get(entityKey);
   }
 
-  //todo remove the 3rd argument as unused
+  /**
+   * Manages the entity associated with the specified entity key, executing the provided processing function.
+   * If the entity is not already managed, it creates a new entry for it.
+   *
+   * @param entityKey                The key associated with the entity.
+   * @param getEntityOrProxyFunction A supplier function to retrieve the entity or its proxy.
+   * @param processFunction          A consumer function to process the entity entry.
+   *
+   * @return The managed entity entry.
+   */
   public EntityEntry manageEntity(EntityKey<?> entityKey, Supplier<Object> getEntityOrProxyFunction, Consumer<EntityEntry> processFunction) {
+    log.debug("Managing entity with key: {}", entityKey);
 
     EntityEntry entityEntry = entityKeyEntityEntryMap.get(entityKey);
     if (entityEntry == null) {
+      log.debug("Entity entry not found for key: {}, putting new entity", entityKey);
+
       entityEntry = putNewEntityEntry(entityKey, getEntityOrProxyFunction);
     } else {
+
+      log.debug("Entity entry found for key: {}, initializing if needed", entityKey);
+
       initialyProxyIfNeeded(entityKey, getEntityOrProxyFunction, entityEntry);
     }
 
     if (entityEntry != null) {
       processFunction.accept(entityEntry);
     }
+    log.debug("Entity managed successfully with key: {}", entityKey);
 
     return entityEntry;
   }
@@ -65,6 +79,8 @@ public class PersistenceContext {
    * @param collection    The collection to be managed.
    */
   public void manageCollection(CollectionKey<?> collectionKey, PersistenceLazyList<?> collection) {
+    log.debug("Managing collection with key: {}", collectionKey);
+
     collectionsMap.put(collectionKey, collection);
   }
 
@@ -72,6 +88,7 @@ public class PersistenceContext {
    * Invalidates the cache by unlinking session-related entities and clearing the entity and collection maps.
    */
   public void invalidateCache() {
+    log.debug("Invalidating cache by unlinking session and clearing associated maps.");
     unlinkSession();
 
     this.collectionsMap.clear();
