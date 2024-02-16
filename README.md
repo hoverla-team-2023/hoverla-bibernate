@@ -4,6 +4,69 @@ Bibernate is an advanced ORM (Object-Relational Mapping) framework designed to f
 
 ![Logo.png](assets/Logo.png)
 
+## Getting Started
+
+Follow these steps to get started with our project:
+
+1. **Clone the Repository:**
+
+    ```
+     git clone https://github.com/hoverla-team-2023/hoverla-bibernate.git
+     cd hoverla-bibernate
+    ```
+
+2. **Build the Project:**
+
+    ```
+    mvn clean install -Dmaven.test.skip=true
+    
+    mvn install:install-file \
+    -Dfile=target/hoverla-bibernate-1.0-SNAPSHOT.jar \
+    -DgroupId=com.bibernate.hoverla \
+    -DartifactId=hoverla-bibernate \
+    -Dversion=1.0-SNAPSHOT \
+    -Dpackaging=jar
+    ```
+
+3. **Add the Project as a dependency:**
+
+    ```java
+    <dependency>
+        <groupId>com.bibernate.hoverla</groupId>
+        <artifactId>hoverla-bibernate</artifactId>
+        <version>${bibernate.version}</version>
+     </dependency>
+    ```
+
+4. **Add config:**
+
+    ```java
+    bibernate:
+      connection-pool:
+        type: hikari
+      dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+      dataSource:
+        jdbcUrl: jdbc:postgresql://host:5432/{your_database}
+        username: {your_username}
+        password: {your_password}
+    ```
+
+5. **Setting up PostgreSQL with Docker Compose**
+
+    ```java
+    version: '3.8'
+    
+    services:
+      postgres:
+        image: postgres
+        restart: always
+        environment:
+          POSTGRES_DB: {your_database}
+          POSTGRES_USER: {your_username}
+          POSTGRES_PASSWORD: {your_password}
+        ports:
+          - "5432:5432"
+    ```
 ## Configuration
 
 Bibernate leverages connection pool for its datasource management, ensuring optimal database performance and resource utilization. Below is the recommended configuration setup for integrating HikariCP with Bibernate:
@@ -26,35 +89,41 @@ bibernate:
     connectionTimeout: 30000
 ```
 
-## Getting Started
-
-To get started with Bibernate:
-
-1. **Configure DataSource**: Set up your datasource in an `config.yml`, `config.xml` or `config.properties` file as described in the configuration section. Ensure to replace the placeholders with your actual database details.
-
-2. **Initialize Bibernate**: Utilize Bibernate's session factory to manage database sessions for performing CRUD operations.
-
 ## Example Usage
 
 ```java
-public class Example {
+public class AppDemo {
+  public static void main(String[] args) {
+    // Create the SessionFactory
+    SessionFactory sessionFactory = new Configuration()
+      .configure("config.yml")
+      .buildSessionFactory();
 
-    public void setup() {
-      // Load properties
-      CommonConfig commonConfig = CommonConfig.of("config.yml");
-      // Add more configurations as needed
+    // Create session
+    Session session = sessionFactory.openSession();
+    session.beginTransaction();
 
-        Configuration configuration = Configuration.builder()
-                .packageName(this.getClass().getPackageName()) // Scan metamodel
-                .properties(commonConfig) // Add properties
-                .annotatedClasses() // Add your entity classes here
-                .build();
+    // Perform database operations
+    // Example: Retrieve all objects of a specific entity
+    List<Object> resultList = session.createQuery("FROM YourEntity")
+      .getResultList();
 
-        // Now you can use configuration.getSessionFactory() to get the session factory
-        // and manage your database sessions.
+    for (Object obj : resultList) {
+      // Process retrieved objects
+      System.out.println(obj);
     }
+
+    // Commit transaction and close session
+    session.getTransaction().commit();
+    session.close();
+
+    // Close the SessionFactory
+    sessionFactory.close();
+  }
 }
 ```
+
+
 
 Features:
 
