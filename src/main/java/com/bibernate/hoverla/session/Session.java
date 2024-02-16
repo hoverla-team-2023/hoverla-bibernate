@@ -29,6 +29,17 @@ public interface Session extends AutoCloseable {
   <T> T find(Class<T> entityClass, Object id);
 
   /**
+   * Finds an entity by its class type and primary key.
+   *
+   * @param entityClass The class of the entity to find.
+   * @param id          The primary key of the entity.
+   * @param <T>         The type of the entity.
+   *
+   * @return The found entity or {@code null} if the entity does not exist.
+   */
+  <T> T find(Class<T> entityClass, Object id, LockMode lockMode);
+
+  /**
    * Creates a query for executing custom queries using an object-oriented query language.
    * <p/>
    * This method enables the construction and execution of custom queries using a specialized object-oriented query language.

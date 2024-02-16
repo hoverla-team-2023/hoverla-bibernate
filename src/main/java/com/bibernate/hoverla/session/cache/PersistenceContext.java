@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.bibernate.hoverla.collection.PersistenceLazyList;
-import com.bibernate.hoverla.session.LockMode;
 import com.bibernate.hoverla.session.SessionImplementor;
 import com.bibernate.hoverla.session.dirtycheck.DirtyCheckService;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
@@ -119,7 +118,6 @@ public class PersistenceContext {
   private EntityEntry putNewEntityEntry(EntityKey<?> entityKey, Supplier<Object> getEntityOrProxyFunction) {
     EntityEntry entityEntry = EntityEntry.builder()
       .entityState(EntityState.MANAGED)
-      .lockMode(LockMode.NONE)
       .isReadOnly(false)
       .build();
     entityKeyEntityEntryMap.put(entityKey, entityEntry);
