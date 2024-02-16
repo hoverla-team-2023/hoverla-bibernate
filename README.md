@@ -77,4 +77,4 @@ Features:
 - **Pessimistic Locking**: Concurrency control mechanism to lock entities to prevent other transactions from accessing them.
 - **Lazy Loading for Collections `@OneToMany`**: Loading of collection attributes only when accessed, for performance optimization.
 - **Advanced Custom JDBC Types**: Support for custom JDBC types for more complex data mapping scenarios e.g. `@JdbcType(PostgreSqlJdbcEnumType.class)`
-- **BQL (Bibernate Query Language)**: BQL simplifies query construction by providing a robust grammar-based query language, enhancing the querying experience.- **Optimistic Locks**: Concurrency control mechanism to prevent concurrent updates to the same entity.
+- **BQL (Bibernate Query Language)**: BQL simplifies query construction by providing a robust grammar-based query language, enhancing the querying experience.
