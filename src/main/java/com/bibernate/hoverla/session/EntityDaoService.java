@@ -23,7 +23,10 @@ import com.bibernate.hoverla.session.dirtycheck.DirtyFieldMapping;
 import com.bibernate.hoverla.utils.EntityProxyUtils;
 import com.bibernate.hoverla.utils.EntityUtils;
 
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 
 import static java.util.stream.Collectors.joining;
@@ -210,10 +213,21 @@ public class EntityDaoService {
     String tableName = entityMapping.getTableName();
     String columnsToUpdate = getColumnsToUpdate(dirtyFields);
 
+    UpdateEntityRequest<T> request = UpdateEntityRequest.<T>builder()
+      .entity(entity)
+      .table(tableName)
+      .columnsToUpdate(columnsToUpdate)
+      .entityKey(entityKey)
+      .primaryKey(primaryKeyMapping)
+      .dirtyFields(dirtyFields)
+      .build();
+
     entityMapping.getFieldMappingWithOptimisticLock()
+      .map(request::withOptimisticLock)
       .ifPresentOrElse(
-        optimisticLock -> updateEntityWithOptimisticLock(entity, tableName, columnsToUpdate, entityKey, primaryKeyMapping, dirtyFields, optimisticLock),
-        () -> updateEntity(tableName, columnsToUpdate, entityKey, primaryKeyMapping, dirtyFields));
+        this::updateEntityWithOptimisticLock,
+        () -> updateEntity(request)
+      );
   }
 
   /**
@@ -268,33 +282,41 @@ public class EntityDaoService {
                                                          primaryKeyMapping.getJdbcType()) };
   }
 
-  private <T> void updateEntityWithOptimisticLock(T entity,
-                                                  String tableName,
-                                                  String columnsToUpdate,
-                                                  EntityKey<?> entityKey,
-                                                  FieldMapping<?> primaryKey,
-                                                  List<DirtyFieldMapping<Object>> dirtyFields,
-                                                  FieldMapping<?> optimistiLockFieldMapping) {
-    String optimisticLockColumn = optimistiLockFieldMapping.getColumnName();
+  @Builder(access = AccessLevel.PRIVATE)
+  private static class UpdateEntityRequest<T> {
+
+    private T entity;
+    private String table;
+    private String columnsToUpdate;
+    private EntityKey<?> entityKey;
+    private FieldMapping<?> primaryKey;
+    private List<DirtyFieldMapping<Object>> dirtyFields;
+    @With
+    private FieldMapping<?> optimisticLock;
+
+  }
+
+  private <T> void updateEntityWithOptimisticLock(UpdateEntityRequest<T> request) {
+    String optimisticLockColumn = request.optimisticLock.getColumnName();
 
     String updateStatement = UPDATE_TABLE_WITH_OPTIMISTIC_LOCK.formatted(
-      tableName,
-      columnsToUpdate,
+      request.table,
+      request.columnsToUpdate,
       optimisticLockColumn,
-      primaryKey.getColumnName(),
+      request.primaryKey.getColumnName(),
       optimisticLockColumn
     );
 
-    T unProxied = EntityProxyUtils.unProxy(entity);
-    Number optimisticLockPrevValue = (Number) EntityUtils.getFieldValue(optimistiLockFieldMapping.getFieldName(), unProxied);
+    T unProxied = EntityProxyUtils.unProxy(request.entity);
+    Number optimisticLockPrevValue = (Number) EntityUtils.getFieldValue(request.optimisticLock.getFieldName(), unProxied);
     Number optimisticLockNextValue = getOptimisticLockNextValue(optimisticLockPrevValue);
 
-    List<JdbcParameterBinding<?>> parameterBindingsList = dirtyFields.stream()
+    List<JdbcParameterBinding<?>> parameterBindingsList = request.dirtyFields.stream()
       .map((DirtyFieldMapping<Object> fieldMapping) -> bindFieldParameter(fieldMapping.fieldMapping(), fieldMapping.value()))
       .collect(Collectors.toList());
-    parameterBindingsList.add(bindParameter(optimisticLockNextValue, optimistiLockFieldMapping.getJdbcType()));
-    parameterBindingsList.add(bindParameter(entityKey.id(), primaryKey.getJdbcType()));
-    parameterBindingsList.add(bindParameter(optimisticLockPrevValue, optimistiLockFieldMapping.getJdbcType()));
+    parameterBindingsList.add(bindParameter(optimisticLockNextValue, request.optimisticLock.getJdbcType()));
+    parameterBindingsList.add(bindParameter(request.entityKey.id(), request.primaryKey.getJdbcType()));
+    parameterBindingsList.add(bindParameter(optimisticLockPrevValue, request.optimisticLock.getJdbcType()));
 
     JdbcParameterBinding<?>[] parameterBindings = parameterBindingsList.toArray(JdbcParameterBinding[]::new);
 
@@ -302,13 +324,13 @@ public class EntityDaoService {
 
     if (updatedRows == 0) {
       throw new BibernateException("Could not update entity %s with optimistic lock value %s. Row was updated by another transaction"
-                                     .formatted(entityKey, optimisticLockPrevValue));
+                                     .formatted(request.entityKey, optimisticLockPrevValue));
     }
 
-    EntityUtils.setFieldValue(optimistiLockFieldMapping.getFieldName(), unProxied, optimisticLockNextValue);
+    EntityUtils.setFieldValue(request.optimisticLock.getFieldName(), unProxied, optimisticLockNextValue);
 
     log.debug("Entity with id {} was updated in table {}, new optimistic lock value: {}, updated rows: {}",
-              entityKey, tableName, optimisticLockNextValue, updatedRows);
+              request.entityKey, request.table, optimisticLockNextValue, updatedRows);
   }
 
   private JdbcParameterBinding<?> bindFieldParameter(FieldMapping<?> fieldMapping, Object value) {
@@ -322,31 +344,27 @@ public class EntityDaoService {
     return bindParameter(value, fieldMapping.getJdbcType());
   }
 
-  private void updateEntity(String tableName,
-                            String columnsToUpdate,
-                            EntityKey<?> entityKey,
-                            FieldMapping<?> primaryKey,
-                            List<DirtyFieldMapping<Object>> dirtyFields) {
+  private <T> void updateEntity(UpdateEntityRequest<T> request) {
     String updateStatement = UPDATE_TABLE_BY_ID.formatted(
-      tableName,
-      columnsToUpdate,
-      primaryKey.getColumnName()
+      request.table,
+      request.columnsToUpdate,
+      request.primaryKey.getColumnName()
     );
 
     JdbcParameterBinding<?>[] parameterBindings = Stream.concat(
-        dirtyFields.stream()
+        request.dirtyFields.stream()
           .map(field -> bindFieldParameter(field.fieldMapping(), field.value())),
-        Stream.of(entityKey)
-          .map(key -> bindParameter(key.id(), primaryKey.getJdbcType())))
+        Stream.of(request.entityKey)
+          .map(key -> bindParameter(key.id(), request.primaryKey.getJdbcType())))
       .toArray(JdbcParameterBinding[]::new);
 
     int updatedRows = session.getJdbcExecutor().executeUpdate(updateStatement, parameterBindings);
 
     if (updatedRows == 0) {
-      throw new OptimisticLockException("Row was updated by another transaction " + entityKey);
+      throw new OptimisticLockException("Row was updated by another transaction " + request.entityKey);
     }
 
-    log.debug("Entity with id {} was updated in table {}, updated rows: {}", entityKey, tableName, updatedRows);
+    log.debug("Entity with id {} was updated in table {}, updated rows: {}", request.entityKey, request.table, updatedRows);
   }
 
   public String getLockModeSqlAppend(LockMode lockModeEnum) {
