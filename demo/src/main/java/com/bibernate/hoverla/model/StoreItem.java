@@ -16,7 +16,7 @@ public class StoreItem {
 
   @Id
   @SequenceGeneratedValue(sequenceName = "store_item_id_seq")
-  private Integer id;
+  private Long id;
   @Column(name = "name", updatable = false)
   private String name;
   @Column(name = "price")

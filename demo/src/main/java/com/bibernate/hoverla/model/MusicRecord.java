@@ -16,7 +16,7 @@ public class MusicRecord {
 
   @Id
   @IdentityGeneratedValue
-  private Integer id;
+  private Long id;
   private String title;
   private String artist;
   @JdbcType(PostgreSqlJdbcEnumType.class)
