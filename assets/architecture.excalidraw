@@ -1,0 +1,45 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw-jetbrains-plugin",
+  "elements": [
+    {
+      "id": "2VWaV7GUDtiHmvQaA_AQd",
+      "type": "image",
+      "x": 98.16471962616822,
+      "y": 94.5,
+      "width": 1066.6705607476638,
+      "height": 945.2070393374743,
+      "angle": 0,
+      "strokeColor": "transparent",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 659912649,
+      "version": 40,
+      "versionNonce": 1940388553,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1708609159834,
+      "link": null,
+      "locked": false,
+      "status": "pending",
+      "fileId": "81ae1d5d5ebc8a3d51eb42355d8bcaaf3d59ef80",
+      "scale": [
+        1,
+        1
+      ]
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}
